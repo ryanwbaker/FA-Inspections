@@ -1,570 +1,708 @@
 {
-    "version": "CAN_ULC_S536_2019_REV_1",
-    "header": {
-        "title": "# ANNUAL FIRE ALARM TEST AND INSPECTION RECORD",
-        "subtitle": "As Per Reference Sections 20-23; CAN/ULC-S536:2019-REV1, April 5, 2021, p. 42-58"
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "id": "can_ulc_s536_2019",
+  "title": "CAN/ULC-S536:2019 Fire Alarm System Annual Test & Inspection Record",
+  "version": "2019/2024",
+  "description": "Mobile-optimized schema for the mandatory CAN/ULC-S536:2019 annual fire alarm inspection and test record. Sections mirror the standard's numbered clauses exactly.",
+  "mobile_notes": {
+    "repeatable_sections": ["22.1","22.2","22.3","22.4","22.5","22.6","22.7","22.8","22.9","22.11","22.12","23.2","23.3"],
+    "conditional_sections": ["22.3","22.6","22.7","22.8","22.9","22.11","22.12"],
+    "tri_state_legend": { "pass": "✓", "fail": "✗", "na": "—" },
+    "skip_pattern": "If a section has an 'applicable' toggle field and it is set to false, the entire section body should be collapsed/skipped on mobile."
+  },
+
+  "sections": [
+
+    {
+      "id": "s20_1",
+      "clause": "20.1",
+      "title": "Fire Alarm System Annual Test and Inspection Report",
+      "description": "Cover page — service company, system, and building information plus summary affirmations.",
+      "subsections": [
+
+        {
+          "id": "s20_1_service",
+          "title": "Service Company Information",
+          "fields": [
+            { "id": "svc_company_name",    "label": "Company Name",        "type": "string",   "required": true },
+            { "id": "svc_address",         "label": "Company Address",     "type": "string",   "required": true },
+            { "id": "svc_phone",           "label": "Company Phone",       "type": "phone",    "required": true },
+            { "id": "svc_contact",         "label": "Contact Person",      "type": "string",   "required": false },
+            { "id": "date_of_service",     "label": "Date of Service",     "type": "date",     "required": true },
+            { "id": "last_service_date",   "label": "Last Service Date",   "type": "date",     "required": true },
+            { "id": "work_order_number",   "label": "Work Order Number",   "type": "string",   "required": true }
+          ]
+        },
+
+        {
+          "id": "s20_1_system",
+          "title": "Fire Alarm System Configuration",
+          "fields": [
+            {
+              "id": "system_stage",
+              "label": "System Stage",
+              "type": "radio",
+              "required": true,
+              "options": ["Single Stage", "Two Stage", "Other"]
+            },
+            { "id": "system_stage_other", "label": "Stage (Other — specify)", "type": "string", "required": false, "conditional_on": { "field": "system_stage", "value": "Other" } },
+            {
+              "id": "system_technology",
+              "label": "System Technology",
+              "type": "multi_checkbox",
+              "required": true,
+              "options": ["Addressable", "Conventional", "Wireless", "Hybrid"]
+            },
+            { "id": "conventional_initiating_circuits",   "label": "No. of Conventional Initiating Circuits",    "type": "integer", "required": false, "conditional_on": { "field": "system_technology", "contains": "Conventional" } },
+            { "id": "conventional_notification_circuits", "label": "No. of Conventional Notification Circuits",  "type": "integer", "required": false, "conditional_on": { "field": "system_technology", "contains": "Conventional" } },
+            { "id": "conventional_voice_circuits",        "label": "No. of Voice Paging Circuits",               "type": "integer", "required": false, "conditional_on": { "field": "system_technology", "contains": "Conventional" } },
+            { "id": "sys_manufacturer",  "label": "Manufacturer",      "type": "string",  "required": true },
+            { "id": "sys_model_number",  "label": "Model Number",      "type": "string",  "required": true },
+            { "id": "sys_ulc_serial",    "label": "ULC Serial Number", "type": "string",  "required": true }
+          ]
+        },
+
+        {
+          "id": "s20_1_building",
+          "title": "Building Information",
+          "fields": [
+            { "id": "bldg_name",              "label": "Building Name",                    "type": "string",  "required": true },
+            { "id": "bldg_address",           "label": "Street Address",                   "type": "string",  "required": true },
+            { "id": "bldg_city",              "label": "City",                             "type": "string",  "required": true },
+            { "id": "bldg_postal_code",       "label": "Postal Code",                      "type": "string",  "required": true },
+            { "id": "bldg_contact_person",    "label": "Contact Person",                   "type": "string",  "required": true },
+            { "id": "bldg_contact_phone",     "label": "Contact Phone",                    "type": "phone",   "required": true },
+            { "id": "bldg_contact_fax",       "label": "Contact Fax",                      "type": "phone",   "required": false },
+            { "id": "bldg_owner_manager",     "label": "Owner / Property Manager / Strata","type": "string",  "required": true },
+            { "id": "bldg_owner_phone",       "label": "Owner Phone",                      "type": "phone",   "required": true },
+            { "id": "bldg_owner_fax",         "label": "Owner Fax",                        "type": "phone",   "required": false },
+            { "id": "fsrc_name",              "label": "Fire Signal Receiving Centre Name", "type": "string",  "required": false },
+            { "id": "fsrc_phone",             "label": "FSRC Phone",                       "type": "phone",   "required": false },
+            { "id": "fsrc_fax",               "label": "FSRC Fax",                         "type": "phone",   "required": false }
+          ]
+        },
+
+        {
+          "id": "s20_1_summary",
+          "title": "Summary Affirmations",
+          "mobile_note": "Render as a vertical Yes/No toggle list.",
+          "fields": [
+            { "id": "sum_connected_to_fsrc",        "label": "System is connected to a Fire Signal Receiving Centre (name and phone recorded above).",                               "type": "boolean_yn",  "required": true },
+            { "id": "sum_fully_inspected",          "label": "The entire system has been inspected and tested in accordance with ULC-S536:2019 (2024).",                            "type": "boolean_yn",  "required": true },
+            { "id": "sum_fully_functional",         "label": "The fire alarm system is fully functional.",                                                                          "type": "boolean_yn",  "required": true },
+            { "id": "sum_deficiencies_found",       "label": "Deficiencies were identified during this inspection (see Section 20.2 if Yes).",                                     "type": "boolean_yn",  "required": true },
+            { "id": "sum_deficiencies_corrected",   "label": "All identified deficiencies have been corrected as of this date.",                                                    "type": "boolean_yn",  "required": false, "conditional_on": { "field": "sum_deficiencies_found", "value": true } },
+            { "id": "sum_deficiencies_corrected_date", "label": "Date All Deficiencies Corrected",                                                                                 "type": "date",        "required": false, "conditional_on": { "field": "sum_deficiencies_corrected", "value": true } },
+            { "id": "sum_recommendations_found",   "label": "Recommendations were identified during this inspection (see Section 20.3 if Yes).",                                  "type": "boolean_yn",  "required": true },
+            { "id": "sum_report_copy_given",        "label": "A copy of this report has been / will be given to the owner or owner's representative and maintained on premises.",   "type": "boolean_yn",  "required": true }
+          ]
+        },
+
+        {
+          "id": "s20_1_affirmation",
+          "title": "Affirmation & Technician Signatures",
+          "mobile_note": "Each technician block is a collapsible card. Render primary tech first.",
+          "fields": [
+            { "id": "report_total_pages",              "label": "Total Pages in Report",             "type": "integer",   "required": true },
+            { "id": "primary_tech_company",            "label": "Supervising Company Name",          "type": "string",    "required": true },
+            { "id": "primary_tech_name",               "label": "Supervising / Primary Tech Name",   "type": "string",    "required": true },
+            { "id": "primary_tech_id",                 "label": "Primary Tech ID / Certificate No.", "type": "string",    "required": true },
+            { "id": "primary_tech_date",               "label": "Primary Tech Date",                 "type": "date",      "required": true },
+            { "id": "primary_tech_signature",          "label": "Primary Tech Signature",            "type": "signature", "required": true },
+            { "id": "conducting_tech_company",         "label": "Conducting Tech Company Name",      "type": "string",    "required": false },
+            { "id": "conducting_tech_name",            "label": "Conducting Technician Name",        "type": "string",    "required": false },
+            { "id": "conducting_tech_id",              "label": "Conducting Tech ID / Certificate",  "type": "string",    "required": false },
+            { "id": "conducting_tech_date",            "label": "Conducting Tech Date",              "type": "date",      "required": false },
+            { "id": "conducting_tech_signature",       "label": "Conducting Tech Signature",         "type": "signature", "required": false }
+          ]
+        }
+      ]
     },
-    "sections":
-        [
+
+    {
+      "id": "s20_2",
+      "clause": "20.2",
+      "title": "Deficiencies",
+      "description": "Repeatable table of device-level and control-function deficiencies identified during the inspection.",
+      "mobile_note": "Add-item interface. Each deficiency is a card. Two sub-types: Device and Control Function.",
+      "subsections": [
+        {
+          "id": "s20_2_device_deficiencies",
+          "title": "Device Deficiencies",
+          "type": "repeatable_list",
+          "item_fields": [
+            { "id": "def_d_item_num",       "label": "Item #",                        "type": "integer",  "required": true,  "auto_increment": true },
+            { "id": "def_d_device_type",    "label": "Device Type",                   "type": "string",   "required": true },
+            { "id": "def_d_location",       "label": "Device Location",               "type": "string",   "required": true },
+            { "id": "def_d_description",    "label": "Deficiency Description",        "type": "textarea", "required": true },
+            { "id": "def_d_clause_ref",     "label": "ULC-S536 Clause Reference",     "type": "string",   "required": true },
+            { "id": "def_d_date_corrected", "label": "Date Corrected (MM/DD/YY)",     "type": "date",     "required": false },
+            { "id": "def_d_work_order",     "label": "Work Order / Reference #",      "type": "string",   "required": false },
+            { "id": "def_d_provider_name",  "label": "Service Provider Name",         "type": "string",   "required": false },
+            { "id": "def_d_tech_name_id",   "label": "Repair Tech Name & ID No.",     "type": "string",   "required": false }
+          ]
+        },
+        {
+          "id": "s20_2_control_deficiencies",
+          "title": "Control Function / Feature Deficiencies",
+          "type": "repeatable_list",
+          "item_fields": [
+            { "id": "def_c_item_num",       "label": "Item #",                        "type": "integer",  "required": true,  "auto_increment": true },
+            { "id": "def_c_feature",        "label": "Control Function or Feature",   "type": "string",   "required": true },
+            { "id": "def_c_description",    "label": "Deficiency Description",        "type": "textarea", "required": true },
+            { "id": "def_c_clause_ref",     "label": "ULC-S536 Clause Reference",     "type": "string",   "required": true },
+            { "id": "def_c_date_corrected", "label": "Date Corrected (MM/DD/YY)",     "type": "date",     "required": false },
+            { "id": "def_c_work_order",     "label": "Work Order / Reference #",      "type": "string",   "required": false },
+            { "id": "def_c_provider_name",  "label": "Service Provider Name",         "type": "string",   "required": false },
+            { "id": "def_c_tech_name_id",   "label": "Repair Tech Name & ID No.",     "type": "string",   "required": false }
+          ]
+        },
+        {
+          "id": "s20_2_owner_compliance",
+          "title": "Building Owner / Representative Compliance Statement",
+          "mobile_note": "Shown only after deficiencies are entered. Requires owner signature.",
+          "fields": [
+            { "id": "owner_compliance_printed_name", "label": "Printed Name",  "type": "string",    "required": true },
+            { "id": "owner_compliance_signature",    "label": "Signature",     "type": "signature", "required": true },
+            { "id": "owner_compliance_date",         "label": "Date",          "type": "date",      "required": true }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "s20_3",
+      "clause": "20.3",
+      "title": "Recommendations",
+      "description": "Technician's recommendations and testing notes.",
+      "fields": [
+        { "id": "recommendations_notes", "label": "Technician's Recommendations / Testing Notes", "type": "textarea", "required": false }
+      ]
+    },
+
+    {
+      "id": "s20_4",
+      "clause": "20.4",
+      "title": "Technician Attendance Log",
+      "description": "Required log of every site visit during the inspection period.",
+      "type": "repeatable_list",
+      "item_fields": [
+        { "id": "attn_date",            "label": "Date (MM/DD/YY)",               "type": "date",    "required": true },
+        { "id": "attn_persons",         "label": "Person(s) Attending",           "type": "string",  "required": true },
+        { "id": "attn_time_in",         "label": "Time In",                       "type": "time",    "required": true },
+        { "id": "attn_time_out",        "label": "Time Out",                      "type": "time",    "required": true },
+        { "id": "attn_notes",           "label": "Notes for the Day",             "type": "textarea","required": false },
+        { "id": "attn_primary_name",    "label": "Primary Technician Printed Name", "type": "string","required": true },
+        { "id": "attn_primary_cert",    "label": "Primary Tech Certification No.", "type": "string", "required": true }
+      ]
+    },
+
+    {
+      "id": "s21",
+      "clause": "21",
+      "title": "Documentation",
+      "description": "Verify fire alarm system documentation is available or accessible on site.",
+      "mobile_note": "Render each item as a tri-state toggle row (Yes / No / N/A). Group A–I under sub-headers.",
+      "fields": [
+        { "id": "doc_A",       "label": "A — Reset and alarm silence instructions are on site.",                                                                "type": "tri_state", "required": true },
+        { "id": "doc_B",       "label": "B — Trouble signal silence instructions and action steps are on site.",                                               "type": "tri_state", "required": true },
+        { "id": "doc_C",       "label": "C — Description of each control / indicator function is on site.",                                                    "type": "tri_state", "required": true },
+        { "id": "doc_D",       "label": "D — Description of area / fire zone for each alarm detection circuit is on site.",                                    "type": "tri_state", "required": true },
+        { "id": "doc_E",       "label": "E — Description of alarm signal operation is on site.",                                                               "type": "tri_state", "required": true },
+        { "id": "doc_F",       "label": "F — Description of ancillary equipment controlled by the FAS is on site.",                                           "type": "tri_state", "required": true },
+        { "id": "doc_G",       "label": "G — Smoke control system sequence of operation documentation is on site (if smoke control installed).",              "type": "tri_state", "required": true },
+        { "id": "doc_G_measure","label": "G — Smoke control measure (per NRCC No. 13366, if applicable)",                                                      "type": "string",    "required": false },
+        { "id": "doc_H",       "label": "H — Building diagrams showing smoke control equipment type and location are on site.",                               "type": "tri_state", "required": true },
+        { "id": "doc_I_i",     "label": "I(i) — Sequence of Operation on site.",                                                                              "type": "tri_state", "required": true },
+        { "id": "doc_I_ii",    "label": "I(ii) — Operating instructions on site.",                                                                            "type": "tri_state", "required": true },
+        { "id": "doc_I_iii",   "label": "I(iii) — Description of each type of field device on site.",                                                         "type": "tri_state", "required": true },
+        { "id": "doc_I_iv",    "label": "I(iv) — Input-to-output programmed function details on site (programmed systems).",                                  "type": "tri_state", "required": true },
+        { "id": "doc_I_v",     "label": "I(v) — Connection to fire signal receiving centre documented on site (if required).",                                "type": "tri_state", "required": true },
+        { "id": "doc_I_vi",    "label": "I(vi) — Previous verification report(s) and AHJ-approved modification documentation on site.",                      "type": "tri_state", "required": true },
+        { "id": "doc_I_vii",   "label": "I(vii) — Building plans showing FA zoning, device address/location, control units, transponders, annunciators on site.", "type": "tri_state", "required": true },
+        { "id": "doc_I_viii",  "label": "I(viii) — Copy of site-specific software on site (if applicable).",                                                  "type": "tri_state", "required": true },
+        { "id": "doc_J_location", "label": "J — Location(s) and media type(s) of on-site documentation",                                                     "type": "string",    "required": false }
+      ]
+    },
+
+    {
+      "id": "s22",
+      "clause": "22",
+      "title": "Control Unit or Transponder Test Record",
+      "description": "Repeatable section — complete for each control unit or transponder on the system.",
+      "type": "repeatable_section",
+      "instance_label": "Control Unit / Transponder",
+      "subsections": [
+
+        {
+          "id": "s22_1",
+          "clause": "22.1",
+          "title": "Control Unit or Transponder Inspection",
+          "reference": "Clause 8.2",
+          "fields": [
+            { "id": "cu_field_location",        "label": "Field Location",                           "type": "string",  "required": true },
+            { "id": "cu_identification",         "label": "Control Unit / Transponder ID",            "type": "string",  "required": true },
+            { "id": "cu_A",  "label": "A — Input circuit designations correctly identified for connected field devices.",            "type": "tri_state", "required": true },
+            { "id": "cu_B",  "label": "B — Output circuit designations correctly identified for connected field devices.",           "type": "tri_state", "required": true },
+            { "id": "cu_C",  "label": "C — Correct designations for common control functions and indicators.",                       "type": "tri_state", "required": true },
+            { "id": "cu_D",  "label": "D — Plug-in components and modules securely in place.",                                      "type": "tri_state", "required": true },
+            { "id": "cu_E",  "label": "E — Plug-in cables securely in place.",                                                      "type": "tri_state", "required": true },
+            { "id": "cu_F_fw_date",    "label": "F — Firmware Date",         "type": "date",   "required": false },
+            { "id": "cu_F_fw_rev",     "label": "F — Firmware Revision",     "type": "string", "required": false },
+            { "id": "cu_F_fw_ver",     "label": "F — Firmware Version",      "type": "string", "required": false },
+            { "id": "cu_F_sw_date",    "label": "F — Software Date",         "type": "date",   "required": false },
+            { "id": "cu_F_sw_rev",     "label": "F — Software Revision",     "type": "string", "required": false },
+            { "id": "cu_F_sw_ver",     "label": "F — Software Version",      "type": "string", "required": false },
+            { "id": "cu_G",  "label": "G — Control unit is clean and free of dust and dirt.",                                       "type": "tri_state", "required": true },
+            { "id": "cu_H",  "label": "H — Fuses in accordance with manufacturer's specification.",                                 "type": "tri_state", "required": true },
+            { "id": "cu_I",  "label": "I — Control unit lock is functional.",                                                       "type": "tri_state", "required": true },
+            { "id": "cu_J",  "label": "J — Termination points for wiring to field devices are secure.",                             "type": "tri_state", "required": true }
+          ]
+        },
+
+        {
+          "id": "s22_2",
+          "clause": "22.2",
+          "title": "Control Unit or Transponder Functional Test",
+          "reference": "Clause 8.3",
+          "fields": [
+            { "id": "cu2_A",  "label": "A — Power 'on' visual indicator operates.",                                                                "type": "tri_state", "required": true },
+            { "id": "cu2_B",  "label": "B — Time and date indication corresponds with local time and date.",                                       "type": "tri_state", "required": true },
+            { "id": "cu2_C",  "label": "C — Common visual trouble signal operates.",                                                               "type": "tri_state", "required": true },
+            { "id": "cu2_D",  "label": "D — Common audible trouble signal operates.",                                                              "type": "tri_state", "required": true },
+            { "id": "cu2_E",  "label": "E — Trouble signal silence switch operates.",                                                              "type": "tri_state", "required": true },
+            { "id": "cu2_F",  "label": "F — Main power supply failure trouble signal operates.",                                                   "type": "tri_state", "required": true },
+            { "id": "cu2_G",  "label": "G — Ground fault on positive and negative conductors initiates trouble signal.",                          "type": "tri_state", "required": true },
+            { "id": "cu2_H",  "label": "H — Alert signal operates.",                                                                              "type": "tri_state", "required": true },
+            { "id": "cu2_I",  "label": "I — Alarm signal operates.",                                                                              "type": "tri_state", "required": true },
+            { "id": "cu2_J",  "label": "J — Automatic transfer from alert to alarm signal operates.",                                             "type": "tri_state", "required": true },
+            { "id": "cu2_J_time", "label": "J — Auto-transfer time (seconds)",                                                                    "type": "number",    "required": false },
+            { "id": "cu2_K",  "label": "K — Manual transfer from alert to alarm signal operates.",                                                "type": "tri_state", "required": true },
+            { "id": "cu2_L",  "label": "L — Auto transfer from alert to alarm signal cancel (acknowledge) operates on two-stage system.",         "type": "tri_state", "required": true },
+            { "id": "cu2_M",  "label": "M — Alarm signal silence inhibit function operates.",                                                     "type": "tri_state", "required": true },
+            { "id": "cu2_N",  "label": "N — Alarm signal manual silence operates.",                                                               "type": "tri_state", "required": true },
+            { "id": "cu2_O",  "label": "O — Alarm signal silence visual indication operates.",                                                    "type": "tri_state", "required": true },
+            { "id": "cu2_P",  "label": "P — Silenced alarm signal automatically re-initiates only on subsequent alarm from another NBC-required FA zone.", "type": "tri_state", "required": true },
+            { "id": "cu2_Q_time", "label": "Q — Duration of alarm signal prior to automatic silence (seconds)",                                   "type": "number",    "required": false },
+            { "id": "cu2_R",  "label": "R — Audible/visual alert and alarm signals programmed and operate per design / documentation.",           "type": "tri_state", "required": true },
+            { "id": "cu2_S",  "label": "S — Input circuit alarm and supervisory operation (audible and visual) operates.",                        "type": "tri_state", "required": true },
+            { "id": "cu2_T",  "label": "T — Input circuit supervision fault causes trouble indication.",                                          "type": "tri_state", "required": true },
+            { "id": "cu2_U",  "label": "U — Output circuit alarm indicators operate.",                                                            "type": "tri_state", "required": true },
+            { "id": "cu2_V",  "label": "V — Output circuit supervision fault causes trouble indication.",                                         "type": "tri_state", "required": true },
+            { "id": "cu2_W",  "label": "W — Visual indicator test (lamp test) operates.",                                                         "type": "tri_state", "required": true },
+            { "id": "cu2_X",  "label": "X — Coded signal sequence operates ≥ required number of times with correct alarm signal thereafter.",    "type": "tri_state", "required": true },
+            { "id": "cu2_Y",  "label": "Y — Coded signal sequences are not interrupted by subsequent alarms.",                                   "type": "tri_state", "required": true },
+            { "id": "cu2_Z",  "label": "Z — Ancillary device control circuit is rated for intended purpose.",                                    "type": "tri_state", "required": true },
+            { "id": "cu2_AA", "label": "AA — Ancillary device bypass results in trouble signal.",                                                 "type": "tri_state", "required": true },
+            { "id": "cu2_BB", "label": "BB — Input-to-output operation including ancillary device operates per design / Annex D documentation.", "type": "tri_state", "required": true },
+            { "id": "cu2_CC", "label": "CC — System Reset operates.",                                                                             "type": "tri_state", "required": true },
+            { "id": "cu2_DD", "label": "DD — Main power to emergency power supply transfer operates.",                                            "type": "tri_state", "required": true },
+            { "id": "cu2_EE", "label": "EE — Smoke detector alarm verification (status change confirmation) verified.",                           "type": "tri_state", "required": true }
+          ]
+        },
+
+        {
+          "id": "s22_3",
+          "clause": "22.3",
+          "title": "Voice Communication Test",
+          "reference": "Subsection 8.5",
+          "applicable_toggle": { "id": "vc_applicable", "label": "Voice Communication capabilities exist on this system", "type": "boolean", "default": true },
+          "fields": [
+            { "id": "vc_location",       "label": "Location",       "type": "string", "required": true },
+            { "id": "vc_identification", "label": "Identification", "type": "string", "required": true },
+            { "id": "vc_A",  "label": "A — Power 'on' visual indicator operates.",                                                                          "type": "tri_state", "required": true },
+            { "id": "vc_B",  "label": "B — Common visual trouble signal operates.",                                                                         "type": "tri_state", "required": true },
+            { "id": "vc_C",  "label": "C — Common audible trouble signal operates.",                                                                        "type": "tri_state", "required": true },
+            { "id": "vc_D",  "label": "D — Trouble signal silence switch operates.",                                                                        "type": "tri_state", "required": true },
+            { "id": "vc_E",  "label": "E — All-call voice paging (including visual indicator) operates.",                                                   "type": "tri_state", "required": true },
+            { "id": "vc_F",  "label": "F — Selective voice paging output circuits (including visual indication) operate.",                                  "type": "tri_state", "required": true },
+            { "id": "vc_G",  "label": "G — Selective voice paging trouble operation (including visual indication) operates.",                               "type": "tri_state", "required": true },
+            { "id": "vc_H",  "label": "H — Microphone (including press-to-talk switch) operates.",                                                         "type": "tri_state", "required": true },
+            { "id": "vc_I",  "label": "I — Voice paging does not interfere with initial inhibit time of alert and alarm signals.",                         "type": "tri_state", "required": true },
+            { "id": "vc_J",  "label": "J — All-call voice paging operates on emergency power supply.",                                                     "type": "tri_state", "required": true },
+            { "id": "vc_K",  "label": "K — Back-up amplifier automatic transfer feature operates (where backup amps installed).",                          "type": "tri_state", "required": true },
+            { "id": "vc_L",  "label": "L — Emergency telephone call-in circuits (audible and visual indication) operate.",                                 "type": "tri_state", "required": true },
+            { "id": "vc_M",  "label": "M — Emergency telephone two-way voice communication circuits operate.",                                             "type": "tri_state", "required": true },
+            { "id": "vc_N",  "label": "N — Emergency telephone trouble operation (visual indication) operates.",                                           "type": "tri_state", "required": true },
+            { "id": "vc_O",  "label": "O — Emergency telephone verbal communication operates.",                                                            "type": "tri_state", "required": true },
+            { "id": "vc_P",  "label": "P — Emergency telephone operable / in-use tone at handset operates.",                                              "type": "tri_state", "required": true },
+            { "id": "vc_Q",  "label": "Q — Short or open on paging/alert/alarm/emergency telephone voice bus in standby results in bus-specific trouble.", "type": "tri_state", "required": true }
+          ]
+        },
+
+        {
+          "id": "s22_4",
+          "clause": "22.4",
+          "title": "Power Supply Inspection",
+          "reference": "Section 9",
+          "mobile_note": "Complete for each control unit or booster power supply.",
+          "fields": [
+            { "id": "ps_field_location",         "label": "Power Supply Field Location",       "type": "string", "required": true },
+            { "id": "ps_identification",          "label": "Power Supply Identification",       "type": "string", "required": true },
+            { "id": "ps_disconnect_location",     "label": "Circuit Disconnect Means Location", "type": "string", "required": true },
+            { "id": "ps_panel_breaker_id",        "label": "Panel / Breaker Identification",    "type": "string", "required": true },
+            { "id": "ps_A", "label": "A — Fused in accordance with manufacturer's marked rating.",                                                       "type": "tri_state", "required": true },
+            { "id": "ps_B", "label": "B — Primary supply equipped with identified disconnect means.",                                                    "type": "tri_state", "required": true },
+            { "id": "ps_C", "label": "C — Adequate to meet system requirements.",                                                                        "type": "tri_state", "required": true },
+            { "id": "ps_D", "label": "D — Short on isolated side of each power isolation module results in trouble condition.",                          "type": "tri_state", "required": true },
+            { "id": "ps_E", "label": "E — Operation of device on source side of each shorted power isolation module is confirmed.",                      "type": "tri_state", "required": true },
+            { "id": "ps_F", "label": "F — Ancillary device power taken from a source separate from the FACU or transponder (if separate supply).",      "type": "tri_state", "required": true },
+            { "id": "ps_G", "label": "G — Ancillary device power taken from the FACU/transponder designed to provide such power (if integrated).",      "type": "tri_state", "required": true },
+            { "id": "ps_H", "label": "H — Ancillary devices powered from FACU/transponder are recorded.",                                               "type": "tri_state", "required": true }
+          ]
+        },
+
+        {
+          "id": "s22_5",
+          "clause": "22.5",
+          "title": "Emergency Power Supply Test and Inspection",
+          "reference": "Sections 9.2, 9.3, 9.4 and Annex C",
+          "fields": [
+            { "id": "eps_field_location",    "label": "Emergency Power Supply Field Location",  "type": "string",   "required": true },
+            { "id": "eps_identification",     "label": "Emergency Power Supply Identification",  "type": "string",   "required": true },
             {
-                "section": "20",
-                "label": "## Annual Fire Alarm System Test and Inspection Record",
-                "fields": 
-                [
-                    {
-                        "id": "20_notice",
-                        "type": "label",
-                        "label": "NOTE: Refer to Section 7.1 of CAN/ULC-S536:2019-REV1"
-                    }
-                ]
+              "id": "eps_type",
+              "label": "Emergency Power Supply Type",
+              "type": "multi_checkbox",
+              "required": true,
+              "options": ["Batteries", "Generator", "UPS", "Combination"]
             },
             {
-                "section": "20.1",
-                "label": "### Fire Alarm Annual Test and Inspection Report",
-                "fields":
-                [
-                    {
-                        "id": "20.1_work_order_number",
-                        "type": "text",
-                        "label": "Work Order Number",
-                        "placeholder": "Enter Work Order Number",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_inspection_date",
-                        "type": "date",
-                        "label": "Inspection Date",
-                        "placeholder": "YYYY-MM-DD",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_revision_date",
-                        "type": "date",
-                        "label": "Revision Date",
-                        "placeholder": "YYYY-MM-DD",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_building_name",
-                        "type": "text",
-                        "label": "Building Name",
-                        "placeholder": "Enter Building Name",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_address1",
-                        "type": "text",
-                        "label": "Address",
-                        "placeholder": "Enter Address",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_address2",
-                        "type": "text",
-                        "label": "Address Line 2",
-                        "placeholder": "Enter Address Line 2",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_city",
-                        "type": "text",
-                        "label": "City",
-                        "placeholder": "Enter City",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_state",
-                        "type": "text",
-                        "label": "Province/State",
-                        "placeholder": "Enter Province/State",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_zip_code",
-                        "type": "text",
-                        "label": "Postal/Zip Code",
-                        "placeholder": "Enter Postal/Zip Code",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_building_owner",
-                        "type": "text",
-                        "label": "Building Owner/Representative Name",
-                        "placeholder": "Enter Inspector Name",
-                        "required": false
-                    },
-                    {
-                        "id":"20.1_system_manufacturer",
-                        "type":"text",
-                        "label":"System Manufacturer",
-                        "placeholder":"Enter System Manufacturer",
-                        "required":true
-                    },
-                    {
-                        "id":"20.1_system_model",
-                        "type":"text",
-                        "label":"System Model",
-                        "placeholder":"Enter System Model",
-                        "required":true
-                    },
-                    {
-                        "id": "20.1_operation",
-                        "type": "radio",
-                        "label": "System Provides",
-                        "options": 
-                        [
-                            { "label": "Single Stage Operation", "value": "single_stage" },
-                            { "label": "Two Stage Operation", "value": "two_stage" },
-                            { "label": "Other", "value": "other" }
-                        ],
-                        "conditional": {
-                            "value": "other",
-                            "show": 
-                            [
-                                {
-                                    "id": "20.1_description_of_special_operation",
-                                    "type": "text",
-                                    "label": "Description of special operation (if applicable)"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "id": "20.1_receiving_center",
-                        "type": "boolean",
-                        "label": "The system is connected to a fire receiving centre",
-                        "placeholder": "Yes/No",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_receiving_center_name",
-                        "type": "text",
-                        "label": "Name of Fire Receiving Centre (if applicable)",
-                        "placeholder": "Enter Name of Fire Receiving Centre",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_receiving_center_phone",
-                        "type": "text",
-                        "label": "Phone Number of Fire Receiving Centre (if applicable)",
-                        "placeholder": "Enter Phone Number of Fire Receiving Centre",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_page_count",
-                        "type": "number",
-                        "label": "This report has ____ pages:",
-                        "placeholder": "Enter number of pages",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_inspection_confirmation",
-                        "type": "boolean",
-                        "label": "The entire *fire alarm system* has been inspected and tested in accordance with CAN/ULC-S536:2019, Inspection and Testing of Fire Alarm Systems.",
-                        "placeholder": "Yes/No",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_fully_functional",
-                        "type": "boolean",
-                        "label": "The *fire alarm system* is fully functional",
-                        "placeholder": "Yes/No",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_deficiencies_identified",
-                        "type": "boolean",
-                        "label": "During the Annual Inspection and Test were any Deficiencies Identified? See Page 2, if applicable.",
-                        "placeholder": "Yes/No",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_correction_date",
-                        "type": "date",
-                        "label": "As of the following date (YYYY-MM-DD), Deficiencies have been corrected:",
-                        "placeholder": "YYYY-MM-DD",
-                        "required": false
-                    },
-                    {
-                        "id": "20.1_recommendations",
-                        "type": "boolean",
-                        "label": "During the Annual Inspection and Test were any *Recommendations* Identified? See Page 3, if applicable.:",
-                        "placeholder": "Yes/No",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_primary_inspector_name",
-                        "type": "text",
-                        "label": "Printed Name of Person Responsible",
-                        "placeholder": "Enter Name",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_primary_company_name",
-                        "type": "text",
-                        "label": "Company Name",
-                        "placeholder": "Enter Company Name",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_primary_company_telephone",
-                        "type": "text",
-                        "label": "Company Telephone Number",
-                        "placeholder": "Enter Company Telephone Number",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_primary_inspector_signature",
-                        "type": "signature",
-                        "label": "Signature (This certifies that the information contained in this Fire Alarm System Annual Test and Inspection Report is correct and complete)",
-                        "placeholder": "Sign here",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_primary_inspector_certification_number",
-                        "type": "text",
-                        "label": "Certification/ID of Person Responsible",
-                        "placeholder": "Enter Certification/ID",
-                        "required": true
-                    },
-                    {
-                        "id": "20.1_secondary_inspector",
-                        "type": "boolean",
-                        "label": "Was there a secondary person who conducted the Test and Inspection?",
-                        "placeholder": "Yes/No",
-                        "required": true,
-                        "conditional": {
-                            "value": true,
-                            "show": 
-                            [
-                                {
-                                    "id": "20.1_secondary_inspector_name",
-                                    "type": "text",
-                                    "label": "Printed Name of Secondary Person",
-                                    "placeholder": "Enter Name",
-                                    "required": true
-                                },
-                                {
-                                    "id": "20.1_secondary_company_name",
-                                    "type": "text",
-                                    "label": "Company Name",
-                                    "placeholder": "Enter Company Name",
-                                    "required": true
-                                },
-                                {
-                                    "id": "20.1_secondary_company_telephone",
-                                    "type": "text",
-                                    "label": "Company Telephone Number",
-                                    "placeholder": "Enter Company Telephone Number",
-                                    "required": true
-                                },
-                                {
-                                    "id": "20.1_secondary_inspector_signature",
-                                    "type": "signature",
-                                    "label": "Signature (This certifies that the information contained in this Fire Alarm System Annual Test and Inspection Report is correct and complete)",
-                                    "placeholder": "Sign here",
-                                    "required": true
-                                },
-                                {
-                                    "id": "20.1_secondary_inspector_certification_number",
-                                    "type": "text",
-                                    "label": "Certification/ID of Secondary Person",
-                                    "placeholder": "Enter Certification/ID",
-                                    "required": true
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "id": "20.1.1_notice",
-                        "type": "label",
-                        "label": "The inspection and testing records required by this standard and this section, shall follow a tabular format as shown. The “Notes” provided in this section are optional in the report. Tests or inspections may not be reworded or revised in order or format. Companies may recreate these required reports for their use, which may contain additions such as a corporate logo as an example."
-                    }
-        
-                ]
+              "id": "eps_battery_type",
+              "label": "Battery Type",
+              "type": "radio",
+              "required": false,
+              "conditional_on": { "field": "eps_type", "contains_any": ["Batteries","Combination"] },
+              "options": ["Sealed Lead Acid", "Ni-Cad", "Lithium-Ion", "Wet Lead"]
             },
+            { "id": "eps_battery_capacity_ah", "label": "Battery Capacity (AH as installed)",  "type": "number",   "required": false },
             {
-                "section": "20.2",
-                "label": "### Deficiencies",
-                "fields":
-                [
-                    {
-                        "id": "20.2.1_deficiency_definition",
-                        "type": "label",
-                        "label": "For the purposes of this Standard, *deficiency* refers to a device or function that:\n\n  a) Does not operate as intended.\n\n    b) Due to alteration in the building layout or contents, is installed in a location which is not readily accessible for service, testing, maintenance purposes due to safety considerations, and was not tested in the last 24 months.\n\n    c) Is installed in an environment which is not compatible with the documented operating conditions of the specific device; or\n\n    d) Is installed in an orientation or location not specifically indicated by the Installation Instructions of the specific device.\n\n   NOTE: System and device installation locations may differ from those described in CAN/ULC-S524 if a performance-based design and alternate-solution documents were submitted and approved by the authority having jurisdiction for the system under test."
-                    },
-                    {
-                        "id": "20.2.1_deficiency_table_notice",
-                        "type": "label",
-                        "label": "The Inspection and Testing of any corrections/repairs of deficiencies noted on this form has been completed by qualified personnel in the columns marked **Technician Name** and **Technician Certificate No.**"
-                    },
-                    {
-                        "id": "20.2.1_deficiency_table",
-                        "type": "table",
-                        "columns": 
-                        [
-                            {   "key": "20-2-1-itemNumber", 
-                                "label": "Item #", 
-                                "type": "number", 
-                                "required": false 
-                            },
-                            {
-                                "key": "20-2-1-deviceType",
-                                "label": "Device Type (See 23.1 Field Device Testing - Legend and Notes)",
-                                "type": "select",
-                                "required": false,
-                                "optionsRef": "23.1_device_types"
-                            },
-                            {
-                                "key": "20-2-1-deviceLocation", 
-                                "label": "Device Location",
-                                "type": "text",
-                                "required": false 
-                            },
-                            {
-                                "key": "20-2-1-deficiency", 
-                                "label": "Deficiency",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-standardReference", 
-                                "label": "CAN/ULC-S536 Standard Reference Clause", 
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-dateCorrected", 
-                                "label": "Date Corrected (YYYY-MM-DD)",
-                                "type": "date",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-workOrder", 
-                                "label": "Work Order or Reference No.",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-companyCorrected", 
-                                "label": "Company Which Corrected the Deficiency",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-technician", 
-                                "label": "Technician Name",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-certificateNo", 
-                                "label": "Technician Certificate No.",
-                                "type": "text",
-                                "required": false
-                            }
-                        ]
-                    },
-                    {
-                        "id": "20.2_acknowledgement",
-                        "type": "label",
-                        "label": "I understand that all Deficiencies in the table above have been corrected:"
-                    },
-                    {
-                        "id": "20.2_acknowledgement_name",
-                        "type": "text",
-                        "label": "**Building** Owner / Owner's Representative Name",
-                        "placeholder": "Enter Name",
-                        "required": false
-                    },
-                    {
-                        "id": "20.2_acknowledgement_signature",
-                        "type": "signature",
-                        "label": "**Building** Owner / Owner's Representative Signature",
-                        "placeholder": "Sign here",
-                        "required": false
-                    },
-                    {
-                        "id": "20.2_acknowledgement_date",
-                        "type": "date",
-                        "label": "Date of Signature (YYYY-MM-DD)",
-                        "placeholder": "YYYY-MM-DD",
-                        "required": false
-                    },
-                    {
-                        "id": "20.2_acknowledgement_notice",
-                        "type": "label",
-                        "label": "NOTE: Only the above table needs to be updated on the correction of deficiencies. The entire report does not have to be reissued."
-                    }
-                ]
+              "id": "eps_alarm_duration",
+              "label": "NBC Required Full Load Alarm Operation Time",
+              "type": "radio",
+              "required": true,
+              "options": ["2 hours", "1 hour", "30 minutes", "5 minutes"]
             },
+            { "id": "eps_A",  "label": "A — Correct battery type as recommended by manufacturer.",                                                "type": "tri_state", "required": true },
+            { "id": "eps_B",  "label": "B — Correct battery rating per battery calculations based on full system load.",                          "type": "tri_state", "required": true },
+            { "id": "eps_C_v_on",   "label": "C — Battery voltage (main power ON) (VDC)",                                                        "type": "number",    "required": false },
+            { "id": "eps_C_i_on",   "label": "C — Battery charging current (main power ON) (mA)",                                                "type": "number",    "required": false },
+            { "id": "eps_D_v_off",  "label": "D — Battery voltage (main power OFF, FAS supervisory) (VDC)",                                      "type": "number",    "required": false },
+            { "id": "eps_D_i_off",  "label": "D — Battery current (main power OFF, FAS supervisory) (mA)",                                       "type": "number",    "required": false },
+            { "id": "eps_E_v_alarm","label": "E — Battery voltage (main power OFF, FAS full load ALARM) (VDC)",                                  "type": "number",    "required": false },
+            { "id": "eps_E_i_alarm","label": "E — Battery current (main power OFF, FAS full load ALARM) (A)",                                    "type": "number",    "required": false },
+            { "id": "eps_F",  "label": "F — Battery free of physical damage.",                                                                    "type": "tri_state", "required": true },
+            { "id": "eps_G",  "label": "G — Battery terminals cleaned and lubricated.",                                                           "type": "tri_state", "required": true },
+            { "id": "eps_H",  "label": "H — Battery terminals clamped tightly.",                                                                  "type": "tri_state", "required": true },
+            { "id": "eps_I",  "label": "I — Correct electrolyte level.",                                                                          "type": "tri_state", "required": true },
+            { "id": "eps_J",  "label": "J — Specific gravity of electrolyte within manufacturer's specifications.",                               "type": "tri_state", "required": true },
+            { "id": "eps_K",  "label": "K — Inspected for electrolyte leakage.",                                                                  "type": "tri_state", "required": true },
+            { "id": "eps_L",  "label": "L — Adequately ventilated.",                                                                              "type": "tri_state", "required": true },
+            { "id": "eps_M_date_code", "label": "M — Manufacturer's date code or in-service date",                                               "type": "string",    "required": false },
+            { "id": "eps_N",  "label": "N — Battery disconnection causes trouble signal.",                                                        "type": "tri_state", "required": true },
             {
-                "section": "20.3",
-                "label": "### Recommendations",
-                "fields":
-                [
-                    {
-                        "id": "20.3.1_recommendation_definition",
-                        "type": "label",
-                        "label": "### For the purposes of this Standard, *Recommendation* is a proposal or suggestion as to the best course of action for improvement of system components or system operation / installation, including any safety considerations, such as:\n\n.   a) Identifying antiquated or obsolete equipment.\n\n    b) Availability of newer cost-effective technology; or\n\n    c) Alternate methods of detection."
-                    },
-                    {
-                        "id": "20.3.1_recommendations_table",
-                        "type": "table",
-                        "columns": 
-                        [
-                            {   "key": "20-3-1-itemNumber", 
-                                "label": "Recommendation #", 
-                                "type": "number", 
-                                "required": false 
-                            },
-                            {
-                                "key": "20-2-1-deviceType",
-                                "label": "Device Type (See 23.1 Field Device Testing - Legend and Notes)",
-                                "type": "select",
-                                "required": false,
-                                "optionsRef": "23.1_device_types"
-                            },
-                            {
-                                "key": "20-2-1-deviceLocation", 
-                                "label": "Device Location",
-                                "type": "text",
-                                "required": false 
-                            },
-                            {
-                                "key": "20-2-1-recommendation", 
-                                "label": "Recommendation",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-standardReference", 
-                                "label": "CAN/ULC-S536 Standard Reference Clause", 
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-dateCorrected", 
-                                "label": "Date Corrected (YYYY-MM-DD)",
-                                "type": "date",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-workOrder", 
-                                "label": "Work Order or Reference No.",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-companyCorrected", 
-                                "label": "Company Which Corrected the Deficiency",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-technician", 
-                                "label": "Technician Name",
-                                "type": "text",
-                                "required": false
-                            },
-                            { 
-                                "key": "20-2-1-certificateNo", 
-                                "label": "Technician Certificate No.",
-                                "type": "text",
-                                "required": false
-                            }
-                        ]
-                    }
-                ]
+              "id": "eps_O_test_method",
+              "label": "O — Battery test method performed on fully charged battery",
+              "type": "radio",
+              "required": true,
+              "options": [
+                "Required supervisory load for 24h then full load operation",
+                "Silent accelerated test (Annex C1)",
+                "Battery manufacturer's method (specify)"
+              ]
             },
-            {
-                "section": "20.4",
-                "label": "### Technician Attendance Log",
-                "fields":
-                [
-                    {
-                        "id": "20.4_technician_log_notice",
-                        "type": "label",
-                        "label": "NOTE: See Section 7.4 of CAN/ULC-S536:2019-REV1"
-                    },
-                    {
-                        "id": "20.4_technician_log_table",
-                        "type": "table",
-                        "columns": 
-                        [
-                            {   "key": "20-4-timeIn", 
-                                "label": "Time In", 
-                                "type": "datetime", 
-                                "required": false 
-                            },
-                            {   "key": "20-4-timeOut", 
-                                "label": "Time Out", 
-                                "type": "datetime", 
-                                "required": false 
-                            },
-                            {
-                                "key": "20-4-notes",
-                                "label": "Notes (for the day)",
-                                "type": "text",
-                                "required": false
-                            },
-                            {
-                                "key": "20-4-primaryTechnicianName",
-                                "label": "Primary Technician Printed Name",
-                                "type": "text",
-                                "required": false
-                            },
-                            {
-                                "key": "20-4-primaryTechnicianCertification",
-                                "label": "Primary Technician Certification No.",
-                                "type": "text",
-                                "required": false
-                            }
-                        ]
-                    }
+            { "id": "eps_O_manufacturer_method", "label": "O — Battery manufacturer's method (specify)",   "type": "string", "required": false, "conditional_on": { "field": "eps_O_test_method", "value": "Battery manufacturer's method (specify)" } },
+            { "id": "eps_P_calc_capacity",  "label": "P — Calculated battery capacity (Annex C2) (AH)",    "type": "number", "required": false },
+            { "id": "eps_Q_post_test_v",    "label": "Q — Battery terminal voltage after tests (VDC)",      "type": "number", "required": false },
+            { "id": "eps_R",  "label": "R — Battery voltage ≥ 85% of rated capacity after tests.",          "type": "tri_state", "required": true },
+            { "id": "eps_S_charging_a",     "label": "S — Battery charging current after tests (A)",        "type": "number", "required": false },
+            { "id": "eps_gen_A", "label": "Generator A — Generator provides power to AC circuit serving FAS.",                                    "type": "tri_state", "required": false, "conditional_on": { "field": "eps_type", "contains_any": ["Generator","Combination"] } },
+            { "id": "eps_gen_B", "label": "Generator B — Trouble conditions at generator result in audible common trouble signal and visual indication.", "type": "tri_state", "required": false, "conditional_on": { "field": "eps_type", "contains_any": ["Generator","Combination"] } },
+            { "id": "eps_gen_C", "label": "Generator C — Generator 'Run' condition results in audible common trouble signal and visual indication.",     "type": "tri_state", "required": false, "conditional_on": { "field": "eps_type", "contains_any": ["Generator","Combination"] } }
+          ]
+        },
 
+        {
+          "id": "s22_6",
+          "clause": "22.6",
+          "title": "Annunciator, Remote Trouble Signal Unit, Display & Control Centre Test and Inspection",
+          "reference": "Section 10",
+          "applicable_toggle": { "id": "ann_applicable", "label": "Annunciator or Remote Trouble Unit is installed", "type": "boolean", "default": true },
+          "fields": [
+            { "id": "ann_location",       "label": "Annunciator Location",       "type": "string", "required": true },
+            { "id": "ann_identification", "label": "Annunciator Identification", "type": "string", "required": true },
+            { "id": "ann_A",  "label": "A — Power 'on' indicator operates.",                                                                    "type": "tri_state", "required": true },
+            { "id": "ann_B",  "label": "B — Individual alarm and supervisory input zones clearly indicated and separately designated.",          "type": "tri_state", "required": true },
+            { "id": "ann_C",  "label": "C — Individual alarm and supervisory input zone designation labels properly identified.",                "type": "tri_state", "required": true },
+            { "id": "ann_D",  "label": "D — Device labels correspond with actual field location (active and supporting field devices).",        "type": "tri_state", "required": true },
+            { "id": "ann_E",  "label": "E — Common trouble signal operates.",                                                                   "type": "tri_state", "required": true },
+            { "id": "ann_F",  "label": "F — Visual indicator test (lamp test) operates.",                                                       "type": "tri_state", "required": true },
+            { "id": "ann_G",  "label": "G — Input wiring from control unit or transponder is supervised.",                                     "type": "tri_state", "required": true },
+            { "id": "ann_H",  "label": "H — Alarm signal silence visual indicator operates.",                                                   "type": "tri_state", "required": true },
+            { "id": "ann_I",  "label": "I — Switches for ancillary functions operate per design / Annex D documentation.",                     "type": "tri_state", "required": true },
+            { "id": "ann_J",  "label": "J — Ancillary functions visual indicators operate.",                                                    "type": "tri_state", "required": true },
+            { "id": "ann_K",  "label": "K — Manual activation of alarm signal and indication operates.",                                       "type": "tri_state", "required": true },
+            { "id": "ann_L",  "label": "L — Displays are visible in the installed location.",                                                   "type": "tri_state", "required": true },
+            { "id": "ann_M",  "label": "M — Operates on emergency power.",                                                                     "type": "tri_state", "required": true }
+          ]
+        },
 
-                ]
-            },      
-            {
-                "section": "",
-                "label": "### ",
-                "fields":
-                [
+        {
+          "id": "s22_7",
+          "clause": "22.7",
+          "title": "Annunciators or Sequential Displays",
+          "reference": "Section 10.2",
+          "applicable_toggle": { "id": "seq_applicable", "label": "Annunciator or Sequential Display is installed", "type": "boolean", "default": true },
+          "fields": [
+            { "id": "seq_location",       "label": "Annunciator / Sequential Display Location",       "type": "string", "required": true },
+            { "id": "seq_identification", "label": "Annunciator / Sequential Display Identification", "type": "string", "required": true },
+            { "id": "seq_A",  "label": "A — Power 'on' indicator operates.",                                                             "type": "tri_state", "required": true },
+            { "id": "seq_B",  "label": "B — Individual alarm and supervisory zone designation labels properly identified.",              "type": "tri_state", "required": true },
+            { "id": "seq_C",  "label": "C — Individual alarm and supervisory indications properly identified (where individually annunciated).", "type": "tri_state", "required": true },
+            { "id": "seq_D",  "label": "D — Device location and programmed label/descriptor confirmed (active and supporting devices).", "type": "tri_state", "required": true },
+            { "id": "seq_E",  "label": "E — Common trouble signal operates.",                                                            "type": "tri_state", "required": true },
+            { "id": "seq_F",  "label": "F — Visual indicator test (lamp test) operates.",                                               "type": "tri_state", "required": true },
+            { "id": "seq_G",  "label": "G — Input wiring from control unit or transponder is supervised.",                              "type": "tri_state", "required": true },
+            { "id": "seq_H",  "label": "H — Alarm signal silence visual indicator operates.",                                           "type": "tri_state", "required": true },
+            { "id": "seq_I",  "label": "I — Switches for ancillary functions operate per design / documentation (Section 21).",         "type": "tri_state", "required": true },
+            { "id": "seq_J",  "label": "J — Ancillary functions visual indicators operate.",                                            "type": "tri_state", "required": true },
+            { "id": "seq_K",  "label": "K — Manual activation of alarm signal and indication operates.",                                "type": "tri_state", "required": true },
+            { "id": "seq_L",  "label": "L — Displays are visible in the installed location.",                                           "type": "tri_state", "required": true },
+            { "id": "seq_M",  "label": "M — Multi-line sequential display operates per Section 10.2 (where utilized).",                "type": "tri_state", "required": true }
+          ]
+        },
 
-                ]
-            },      
-            {
-                "section": "",
-                "label": "### ",
-                "fields":
-                [
+        {
+          "id": "s22_8",
+          "clause": "22.8",
+          "title": "Remote Trouble Signal Unit Test and Inspection",
+          "applicable_toggle": { "id": "rtsu_applicable", "label": "Remote Trouble Signal Unit is installed", "type": "boolean", "default": true },
+          "fields": [
+            { "id": "rtsu_location",       "label": "Remote Trouble Signal Unit Location",       "type": "string", "required": true },
+            { "id": "rtsu_identification", "label": "Remote Trouble Signal Unit Identification", "type": "string", "required": true },
+            { "id": "rtsu_A", "label": "A — Input wiring from control unit or transponder is supervised.", "type": "tri_state", "required": true },
+            { "id": "rtsu_B", "label": "B — Visual trouble signal operates.",                             "type": "tri_state", "required": true },
+            { "id": "rtsu_C", "label": "C — Audible trouble signal operates.",                           "type": "tri_state", "required": true },
+            { "id": "rtsu_D", "label": "D — Audible trouble signal silence operates.",                   "type": "tri_state", "required": true }
+          ]
+        },
 
-                ]
-            },      
-            {
-                "section": "",
-                "label": "### ",
-                "fields":
-                [
+        {
+          "id": "s22_9",
+          "clause": "22.9",
+          "title": "Printer Test",
+          "applicable_toggle": { "id": "prt_applicable", "label": "Printer is installed on this system", "type": "boolean", "default": false },
+          "fields": [
+            { "id": "prt_location",       "label": "Printer Location",       "type": "string", "required": true },
+            { "id": "prt_identification", "label": "Printer Identification", "type": "string", "required": true },
+            { "id": "prt_A", "label": "A — Operates per design / Annex D documentation.",           "type": "tri_state", "required": true },
+            { "id": "prt_B", "label": "B — Zone of each alarm initiating device is correctly printed.", "type": "tri_state", "required": true }
+          ]
+        }
+      ]
+    },
 
-                ]
-            },      
-            {
-                "section": "",
-                "label": "### ",
-                "fields":
-                [
+    {
+      "id": "s22_10",
+      "clause": "22.10",
+      "title": "Ancillary Device Circuit Test",
+      "description": "Tabular record of each ancillary circuit tested. Repeatable rows.",
+      "mobile_note": "Add-item interface. Each row is a card with 4 fields.",
+      "type": "repeatable_list",
+      "item_fields": [
+        { "id": "anc_circuit_description", "label": "Ancillary Circuit / Device Description", "type": "string",   "required": true },
+        {
+          "id": "anc_powered_by",
+          "label": "Circuit Powered By",
+          "type": "radio",
+          "required": true,
+          "options": ["FACU", "Other"]
+        },
+        { "id": "anc_powered_other",  "label": "Other Power Source (specify)", "type": "string",    "required": false, "conditional_on": { "field": "anc_powered_by", "value": "Other" } },
+        { "id": "anc_operation_confirmed", "label": "Operation of Ancillary Circuit Confirmed", "type": "tri_state", "required": true },
+        { "id": "anc_confirmation_method", "label": "Confirmation Method (see Annex A, A22.10)", "type": "string",  "required": false }
+      ]
+    },
 
-                ]
-            },      
-            {
-                "section": "",
-                "label": "### ",
-                "fields":
-                [
+    {
+      "id": "s22_11",
+      "clause": "22.11",
+      "title": "Interconnection to the Fire Signal Receiving Centre",
+      "applicable_toggle": { "id": "fsrc_applicable", "label": "System has interconnection to a Fire Signal Receiving Centre", "type": "boolean", "default": true },
+      "type": "repeatable_section",
+      "instance_label": "Transmitter",
+      "fields": [
+        { "id": "fsrc_comm_location",     "label": "Communicator Location",              "type": "string", "required": true },
+        { "id": "fsrc_disconnect_loc",    "label": "Circuit Disconnect Means Location",  "type": "string", "required": true },
+        { "id": "fsrc_panel_breaker_id",  "label": "Panel / Breaker Identification",     "type": "string", "required": true },
+        { "id": "fsrc_A_integral",        "label": "A — FSRC transmitter is integral to the FACU.",                                                               "type": "boolean_yn", "required": true },
+        { "id": "fsrc_A_supervised",      "label": "A — Supervised interconnection between FACU and a separately installed FSRC transmitter is provided.",         "type": "boolean_yn", "required": true },
+        { "id": "fsrc_B",                 "label": "B — Alarm transmission to FSRC is received.",                                                                 "type": "tri_state",  "required": true },
+        { "id": "fsrc_C",                 "label": "C — Supervisory transmission to FSRC is received.",                                                           "type": "tri_state",  "required": true },
+        { "id": "fsrc_D",                 "label": "D — Trouble transmission to FSRC is received.",                                                               "type": "tri_state",  "required": true },
+        { "id": "fsrc_E",                 "label": "E — Disabling/disconnecting FSRC transmitter results in specific trouble signal at control unit.",             "type": "tri_state",  "required": true },
+        { "id": "fsrc_F",                 "label": "F — Disabling/disconnecting FSRC transmitter transmits trouble signal to FSRC.",                             "type": "tri_state",  "required": true },
+        { "id": "fsrc_G_company",         "label": "G — FSRC Company Name",                                                                                       "type": "string",     "required": true },
+        { "id": "fsrc_G_telephone",       "label": "G — FSRC Telephone",                                                                                          "type": "phone",      "required": true },
+        { "id": "fsrc_G_address",         "label": "G — FSRC Address",                                                                                            "type": "string",     "required": false },
+        { "id": "fsrc_H",                 "label": "H — Operation of FSRC disconnect means transmits trouble signal to FSRC.",                                    "type": "tri_state",  "required": true }
+      ]
+    },
 
-                ]
-            }      
-        ]    
+    {
+      "id": "s22_12",
+      "clause": "22.12",
+      "title": "Operation Test — Circuit Fault Tolerance (DCL)",
+      "reference": "Section 12 and 23.3",
+      "applicable_toggle": { "id": "dcl_applicable", "label": "Data Communication Link (DCL) circuits exist on this system", "type": "boolean", "default": true },
+      "type": "repeatable_section",
+      "instance_label": "DCL Circuit",
+      "fields": [
+        { "id": "dcl_cu_location",    "label": "Control Unit or Transponder Location",    "type": "string", "required": true },
+        { "id": "dcl_cu_id",          "label": "Control Unit or Transponder Identification", "type": "string", "required": true },
+        { "id": "dcl_circuit_id",     "label": "Data Communication Link Circuit ID",      "type": "string", "required": true },
+        { "id": "dcl_A", "label": "A — Each system abnormal condition (Table 3.1) tested for each DCL at the control unit / transponder.", "type": "tri_state", "required": true },
+        { "id": "dcl_B", "label": "B — Alarm and trouble tests under single ground fault conducted on each conductor independently.",       "type": "tri_state", "required": true },
+        { "id": "dcl_C", "label": "C — Each conductor in a DCLA tested for alarm signal capability on each side of a single open fault.",  "type": "tri_state", "required": true },
+        { "id": "dcl_D", "label": "D — Wire-to-wire short fault tested on each DCL without fault isolation; trouble and alarm from adjacent DCL confirmed.", "type": "tri_state", "required": true },
+        { "id": "dcl_E", "label": "E — Short on isolated side of fault isolators confirmed; device operation from source side confirmed at control unit.", "type": "tri_state", "required": true },
+        { "id": "dcl_F", "label": "F — Where fault isolation is between control units/transponders, shorted section confirmed and operation outside confirmed.", "type": "tri_state", "required": true }
+      ]
+    },
+
+    {
+      "id": "s23",
+      "clause": "23",
+      "title": "Field Device Records",
+      "subsections": [
+
+        {
+          "id": "s23_1",
+          "clause": "23.1",
+          "title": "Field Device Testing — Legend",
+          "description": "Device type codes reference table. Used to populate Device Type in the Individual Device Record.",
+          "mobile_note": "This is a read-only reference displayed as an in-app glossary or searchable picker. Not a fillable section.",
+          "device_type_legend": [
+            { "code": "M",      "category": "Manual Initiating",           "description": "Manual pull station" },
+            { "code": "MAS",    "category": "Manual Initiating",           "description": "Manual Abort Station" },
+            { "code": "HT",     "category": "Automatic Fire Detection",    "description": "Heat Detector, restorable or non-restorable, fixed temperature" },
+            { "code": "RHT",    "category": "Automatic Fire Detection",    "description": "Heat Detector, restorable, rate-of-rise thermostat" },
+            { "code": "S",      "category": "Automatic Fire Detection",    "description": "Ionization Smoke Detector" },
+            { "code": "PS",     "category": "Automatic Fire Detection",    "description": "Photo-electric Smoke Detector" },
+            { "code": "DS",     "category": "Automatic Fire Detection",    "description": "Duct Smoke Detector" },
+            { "code": "MC",     "category": "Automatic Fire Detection",    "description": "Multi-Criteria Detector (specify detection types)" },
+            { "code": "CO",     "category": "Automatic Fire Detection",    "description": "Carbon Monoxide Detector" },
+            { "code": "OD",     "category": "Automatic Fire Detection",    "description": "Other Detector (specify)" },
+            { "code": "EOL(R)", "category": "Automatic Fire Detection",    "description": "End-of-Line Resistor ('R' = Power Supervision Relay)" },
+            { "code": "FS",     "category": "Fire Sprinkler",              "description": "Sprinkler Flow Switch" },
+            { "code": "FPS",    "category": "Fire Sprinkler",              "description": "Sprinkler Flow Pressure Switch" },
+            { "code": "TS",     "category": "Fire Sprinkler",              "description": "Sprinkler Valve Supervisory Tamper Switch" },
+            { "code": "LA",     "category": "Fire Sprinkler",              "description": "Low Air supervisory device" },
+            { "code": "LT",     "category": "Fire Sprinkler",              "description": "Low Temperature supervisory device" },
+            { "code": "HTC",    "category": "Fire Sprinkler",              "description": "Heat Trace Controller" },
+            { "code": "TLW",    "category": "Fire Sprinkler",              "description": "Tank Low Water supervisory device" },
+            { "code": "B",      "category": "Signaling",                   "description": "Bell" },
+            { "code": "H",      "category": "Signaling",                   "description": "Horn" },
+            { "code": "SSAD",   "category": "Signaling",                   "description": "Suite Silencing Audible Device" },
+            { "code": "SB",     "category": "Signaling",                   "description": "Smoke Sounder Base" },
+            { "code": "V",      "category": "Signaling",                   "description": "Visual Alarm Device (specify strobe type or corridor indicator)" },
+            { "code": "SP",     "category": "Signaling",                   "description": "Cone-type Speaker" },
+            { "code": "HSP",    "category": "Signaling",                   "description": "Horn Speaker" },
+            { "code": "AV",     "category": "Signaling",                   "description": "Combination Audible/Visual Device (specify type, e.g., Horn/Strobe)" },
+            { "code": "SCIM",   "category": "Signaling",                   "description": "Signal Circuit Isolation Module" },
+            { "code": "ET",     "category": "Signaling",                   "description": "Emergency Telephone (Fire Fighter's Phone)" },
+            { "code": "SYNC",   "category": "Signaling",                   "description": "Signaling Circuit Synchronization Module" },
+            { "code": "RPM",    "category": "Supporting Field (Addressable)","description": "Remote Point Module" },
+            { "code": "SRIM",   "category": "Supporting Field (Addressable)","description": "Single Point Remote Initiating Module" },
+            { "code": "DRIM",   "category": "Supporting Field (Addressable)","description": "Dual Input Remote Initiating Module" },
+            { "code": "EM",     "category": "Supporting Field (Addressable)","description": "Isolator Module" },
+            { "code": "SCRM",   "category": "Supporting Field (Addressable)","description": "Signal Circuit Remote Module" },
+            { "code": "RRM(S)", "category": "Supporting Field (Addressable)","description": "Remote Relay Module ('S' = supervised outputs)" },
+            { "code": "RS",     "category": "Extinguishment Releasing",    "description": "Releasing Solenoid" },
+            { "code": "PDS",    "category": "Extinguishment Releasing",    "description": "Pressure Discharge Switch" },
+            { "code": "LPS",    "category": "Extinguishment Releasing",    "description": "Low Cylinder Pressure Switch" },
+            { "code": "DH",     "category": "Ancillary",                   "description": "Door Holder ('M' = Magnetic, 'FL' = Fusible Link)" },
+            { "code": "DM",     "category": "Ancillary",                   "description": "Damper Motor" },
+            { "code": "R",      "category": "Ancillary",                   "description": "Relay" },
+            { "code": "AD",     "category": "Ancillary",                   "description": "Other Ancillary Device" },
+            { "code": "SA",     "category": "Ancillary",                   "description": "Smoke Alarm (specify single or multi-station type)" }
+          ],
+          "sensitivity_test_info": {
+            "fields": [
+              { "id": "smoke_ion_test_method",    "label": "Ionization (S) Sensitivity Test Method / Equipment",    "type": "string", "required": false },
+              { "id": "smoke_ion_range",          "label": "Ionization (S) Manufacturer's Sensitivity Range",       "type": "string", "required": false },
+              { "id": "smoke_photo_test_method",  "label": "Photo-electric (PS) Sensitivity Test Method / Equipment","type": "string", "required": false },
+              { "id": "smoke_photo_range",        "label": "Photo-electric (PS) Manufacturer's Sensitivity Range",  "type": "string", "required": false },
+              { "id": "smoke_duct_test_method",   "label": "Duct (DS) Sensitivity Test Method / Equipment",         "type": "string", "required": false },
+              { "id": "smoke_duct_range",         "label": "Duct (DS) Manufacturer's Sensitivity Range",            "type": "string", "required": false },
+              { "id": "smoke_mc_test_method",     "label": "Multi-Criteria (MC) Sensitivity Test Method / Equipment","type": "string", "required": false },
+              { "id": "smoke_mc_range",           "label": "Multi-Criteria (MC) Manufacturer's Sensitivity Range",  "type": "string", "required": false }
+            ]
+          }
+        },
+
+        {
+          "id": "s23_2",
+          "clause": "23.2",
+          "title": "Individual Device Record",
+          "description": "One row per field device. Repeatable. Legend: ✓ = Acceptable, ✗ = Unacceptable (log in §20.2), — = Not Applicable.",
+          "mobile_note": "Render as a card-per-device list with swipe or tap to add. Support barcode / QR scan for Device Location or Address. Group by device type or floor/zone for faster navigation.",
+          "type": "repeatable_list",
+          "item_fields": [
+            { "id": "dev_location",            "label": "Device Location",                          "type": "string",     "required": true,  "hint": "Floor, room, or area identifier. Scan QR/barcode supported." },
+            { "id": "dev_annunciation_label",  "label": "Annunciation Label / LCD Text (if any)",   "type": "string",     "required": false },
+            { "id": "dev_type",                "label": "Device Type",                              "type": "dropdown",   "required": true,  "source": "s23_1.device_type_legend", "hint": "Select from legend or type code" },
+            { "id": "dev_type_custom",         "label": "Device Type — Custom Specification",       "type": "string",     "required": false, "conditional_on": { "field": "dev_type", "value_in": ["OD","MC","V","AV","DH","AD","SA"] } },
+            { "id": "dev_needs_service",       "label": "Requires Service, Repairs, Cleaning, or Missing", "type": "tri_state", "required": true },
+            { "id": "dev_circuit_address",     "label": "Circuit Number or Address",                "type": "string",     "required": true },
+            { "id": "dev_fire_zone",           "label": "Annunciated FIRE ZONE",                   "type": "string",     "required": true },
+            { "id": "dev_correctly_installed", "label": "Correctly Installed (per ULC-S524 at time of installation)", "type": "tri_state", "required": true },
+            { "id": "dev_measurements",        "label": "Measurements",                             "type": "string",     "required": false, "hint": "Sensitivity reading, time delay, pressure, flow delay, date changed, etc. per testing notes §23.1.1" },
+            { "id": "dev_alarm_confirmed",     "label": "Alarm / Activation Confirmed",             "type": "tri_state",  "required": true },
+            { "id": "dev_annunciator_ind",     "label": "Annunciator Indication",                   "type": "tri_state",  "required": true },
+            { "id": "dev_circuit_trouble",     "label": "Supervised Circuit Trouble Signal",        "type": "tri_state",  "required": true },
+            { "id": "dev_comments",            "label": "Comments",                                 "type": "textarea",   "required": false }
+          ]
+        },
+
+        {
+          "id": "s23_3",
+          "clause": "23.3",
+          "title": "Circuit Fault Tolerance Test Sheet",
+          "description": "Records fault tolerance test results per DCL circuit. Repeatable rows.",
+          "mobile_note": "Add-item interface. Each test point is a card. Legend: P = Pass, F = Fail, — = Not Applicable.",
+          "type": "repeatable_list",
+          "item_fields": [
+            { "id": "cft_fault_location",    "label": "Device Location Where Fault Was Introduced / Affected NBC FA Zone Description", "type": "string",     "required": true },
+            { "id": "cft_short",             "label": "Short Fault — Response Time (or N/A)",                                          "type": "string",     "required": false },
+            { "id": "cft_open",              "label": "Open Fault — Response Time (or N/A)",                                           "type": "string",     "required": false },
+            { "id": "cft_ground",            "label": "Ground Fault — Response Time (or N/A)",                                         "type": "string",     "required": false },
+            { "id": "cft_isolation_zone",    "label": "Isolation Results — Identify NBC FA Zone / Area Where Devices Failed",          "type": "string",     "required": false },
+            { "id": "cft_non_faulted_location", "label": "Non-Faulted Circuit — Individual Device Location Tested",                    "type": "string",     "required": true },
+            { "id": "cft_pass_fail",         "label": "Pass / Fail",                                                                   "type": "pass_fail",  "required": true }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "field_type_definitions": {
+    "string":         "Single-line text input",
+    "textarea":       "Multi-line text input",
+    "integer":        "Whole number (numeric keyboard)",
+    "number":         "Decimal number (numeric keyboard)",
+    "date":           "Date picker (YYYY-MM-DD storage; display as MM/DD/YY per standard)",
+    "time":           "Time picker (24h or 12h)",
+    "phone":          "Phone number input with formatting",
+    "boolean":        "Single on/off toggle",
+    "boolean_yn":     "Yes / No two-button toggle",
+    "tri_state":      "Three-option selector: Pass (✓) / Fail (✗) / N/A (—). The standard's core test result type.",
+    "pass_fail":      "Two-option selector: Pass (P) / Fail (F). Used in Circuit Fault Tolerance (23.3).",
+    "radio":          "Single-select from a fixed list of options",
+    "multi_checkbox": "Multiple-select checkboxes",
+    "dropdown":       "Searchable single-select picker",
+    "signature":      "Touch/stylus signature capture with timestamp",
+    "repeatable_list":"Dynamic list of identical item-cards (add / remove / reorder)",
+    "repeatable_section": "Full sub-form that can be instantiated multiple times (e.g., one per control unit)"
+  }
 }

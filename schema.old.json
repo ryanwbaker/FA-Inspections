@@ -1,0 +1,570 @@
+{
+    "version": "CAN_ULC_S536_2019_REV_1",
+    "header": {
+        "title": "# ANNUAL FIRE ALARM TEST AND INSPECTION RECORD",
+        "subtitle": "As Per Reference Sections 20-23; CAN/ULC-S536:2019-REV1, April 5, 2021, p. 42-58"
+    },
+    "sections":
+        [
+            {
+                "section": "20",
+                "label": "## Annual Fire Alarm System Test and Inspection Record",
+                "fields": 
+                [
+                    {
+                        "id": "20_notice",
+                        "type": "label",
+                        "label": "NOTE: Refer to Section 7.1 of CAN/ULC-S536:2019-REV1"
+                    }
+                ]
+            },
+            {
+                "section": "20.1",
+                "label": "### Fire Alarm Annual Test and Inspection Report",
+                "fields":
+                [
+                    {
+                        "id": "20.1_work_order_number",
+                        "type": "text",
+                        "label": "Work Order Number",
+                        "placeholder": "Enter Work Order Number",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_inspection_date",
+                        "type": "date",
+                        "label": "Inspection Date",
+                        "placeholder": "YYYY-MM-DD",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_revision_date",
+                        "type": "date",
+                        "label": "Revision Date",
+                        "placeholder": "YYYY-MM-DD",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_building_name",
+                        "type": "text",
+                        "label": "Building Name",
+                        "placeholder": "Enter Building Name",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_address1",
+                        "type": "text",
+                        "label": "Address",
+                        "placeholder": "Enter Address",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_address2",
+                        "type": "text",
+                        "label": "Address Line 2",
+                        "placeholder": "Enter Address Line 2",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_city",
+                        "type": "text",
+                        "label": "City",
+                        "placeholder": "Enter City",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_state",
+                        "type": "text",
+                        "label": "Province/State",
+                        "placeholder": "Enter Province/State",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_zip_code",
+                        "type": "text",
+                        "label": "Postal/Zip Code",
+                        "placeholder": "Enter Postal/Zip Code",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_building_owner",
+                        "type": "text",
+                        "label": "Building Owner/Representative Name",
+                        "placeholder": "Enter Inspector Name",
+                        "required": false
+                    },
+                    {
+                        "id":"20.1_system_manufacturer",
+                        "type":"text",
+                        "label":"System Manufacturer",
+                        "placeholder":"Enter System Manufacturer",
+                        "required":true
+                    },
+                    {
+                        "id":"20.1_system_model",
+                        "type":"text",
+                        "label":"System Model",
+                        "placeholder":"Enter System Model",
+                        "required":true
+                    },
+                    {
+                        "id": "20.1_operation",
+                        "type": "radio",
+                        "label": "System Provides",
+                        "options": 
+                        [
+                            { "label": "Single Stage Operation", "value": "single_stage" },
+                            { "label": "Two Stage Operation", "value": "two_stage" },
+                            { "label": "Other", "value": "other" }
+                        ],
+                        "conditional": {
+                            "value": "other",
+                            "show": 
+                            [
+                                {
+                                    "id": "20.1_description_of_special_operation",
+                                    "type": "text",
+                                    "label": "Description of special operation (if applicable)"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "20.1_receiving_center",
+                        "type": "boolean",
+                        "label": "The system is connected to a fire receiving centre",
+                        "placeholder": "Yes/No",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_receiving_center_name",
+                        "type": "text",
+                        "label": "Name of Fire Receiving Centre (if applicable)",
+                        "placeholder": "Enter Name of Fire Receiving Centre",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_receiving_center_phone",
+                        "type": "text",
+                        "label": "Phone Number of Fire Receiving Centre (if applicable)",
+                        "placeholder": "Enter Phone Number of Fire Receiving Centre",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_page_count",
+                        "type": "number",
+                        "label": "This report has ____ pages:",
+                        "placeholder": "Enter number of pages",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_inspection_confirmation",
+                        "type": "boolean",
+                        "label": "The entire *fire alarm system* has been inspected and tested in accordance with CAN/ULC-S536:2019, Inspection and Testing of Fire Alarm Systems.",
+                        "placeholder": "Yes/No",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_fully_functional",
+                        "type": "boolean",
+                        "label": "The *fire alarm system* is fully functional",
+                        "placeholder": "Yes/No",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_deficiencies_identified",
+                        "type": "boolean",
+                        "label": "During the Annual Inspection and Test were any Deficiencies Identified? See Page 2, if applicable.",
+                        "placeholder": "Yes/No",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_correction_date",
+                        "type": "date",
+                        "label": "As of the following date (YYYY-MM-DD), Deficiencies have been corrected:",
+                        "placeholder": "YYYY-MM-DD",
+                        "required": false
+                    },
+                    {
+                        "id": "20.1_recommendations",
+                        "type": "boolean",
+                        "label": "During the Annual Inspection and Test were any *Recommendations* Identified? See Page 3, if applicable.:",
+                        "placeholder": "Yes/No",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_primary_inspector_name",
+                        "type": "text",
+                        "label": "Printed Name of Person Responsible",
+                        "placeholder": "Enter Name",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_primary_company_name",
+                        "type": "text",
+                        "label": "Company Name",
+                        "placeholder": "Enter Company Name",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_primary_company_telephone",
+                        "type": "text",
+                        "label": "Company Telephone Number",
+                        "placeholder": "Enter Company Telephone Number",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_primary_inspector_signature",
+                        "type": "signature",
+                        "label": "Signature (This certifies that the information contained in this Fire Alarm System Annual Test and Inspection Report is correct and complete)",
+                        "placeholder": "Sign here",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_primary_inspector_certification_number",
+                        "type": "text",
+                        "label": "Certification/ID of Person Responsible",
+                        "placeholder": "Enter Certification/ID",
+                        "required": true
+                    },
+                    {
+                        "id": "20.1_secondary_inspector",
+                        "type": "boolean",
+                        "label": "Was there a secondary person who conducted the Test and Inspection?",
+                        "placeholder": "Yes/No",
+                        "required": true,
+                        "conditional": {
+                            "value": true,
+                            "show": 
+                            [
+                                {
+                                    "id": "20.1_secondary_inspector_name",
+                                    "type": "text",
+                                    "label": "Printed Name of Secondary Person",
+                                    "placeholder": "Enter Name",
+                                    "required": true
+                                },
+                                {
+                                    "id": "20.1_secondary_company_name",
+                                    "type": "text",
+                                    "label": "Company Name",
+                                    "placeholder": "Enter Company Name",
+                                    "required": true
+                                },
+                                {
+                                    "id": "20.1_secondary_company_telephone",
+                                    "type": "text",
+                                    "label": "Company Telephone Number",
+                                    "placeholder": "Enter Company Telephone Number",
+                                    "required": true
+                                },
+                                {
+                                    "id": "20.1_secondary_inspector_signature",
+                                    "type": "signature",
+                                    "label": "Signature (This certifies that the information contained in this Fire Alarm System Annual Test and Inspection Report is correct and complete)",
+                                    "placeholder": "Sign here",
+                                    "required": true
+                                },
+                                {
+                                    "id": "20.1_secondary_inspector_certification_number",
+                                    "type": "text",
+                                    "label": "Certification/ID of Secondary Person",
+                                    "placeholder": "Enter Certification/ID",
+                                    "required": true
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "id": "20.1.1_notice",
+                        "type": "label",
+                        "label": "The inspection and testing records required by this standard and this section, shall follow a tabular format as shown. The “Notes” provided in this section are optional in the report. Tests or inspections may not be reworded or revised in order or format. Companies may recreate these required reports for their use, which may contain additions such as a corporate logo as an example."
+                    }
+        
+                ]
+            },
+            {
+                "section": "20.2",
+                "label": "### Deficiencies",
+                "fields":
+                [
+                    {
+                        "id": "20.2.1_deficiency_definition",
+                        "type": "label",
+                        "label": "For the purposes of this Standard, *deficiency* refers to a device or function that:\n\n  a) Does not operate as intended.\n\n    b) Due to alteration in the building layout or contents, is installed in a location which is not readily accessible for service, testing, maintenance purposes due to safety considerations, and was not tested in the last 24 months.\n\n    c) Is installed in an environment which is not compatible with the documented operating conditions of the specific device; or\n\n    d) Is installed in an orientation or location not specifically indicated by the Installation Instructions of the specific device.\n\n   NOTE: System and device installation locations may differ from those described in CAN/ULC-S524 if a performance-based design and alternate-solution documents were submitted and approved by the authority having jurisdiction for the system under test."
+                    },
+                    {
+                        "id": "20.2.1_deficiency_table_notice",
+                        "type": "label",
+                        "label": "The Inspection and Testing of any corrections/repairs of deficiencies noted on this form has been completed by qualified personnel in the columns marked **Technician Name** and **Technician Certificate No.**"
+                    },
+                    {
+                        "id": "20.2.1_deficiency_table",
+                        "type": "table",
+                        "columns": 
+                        [
+                            {   "key": "20-2-1-itemNumber", 
+                                "label": "Item #", 
+                                "type": "number", 
+                                "required": false 
+                            },
+                            {
+                                "key": "20-2-1-deviceType",
+                                "label": "Device Type (See 23.1 Field Device Testing - Legend and Notes)",
+                                "type": "select",
+                                "required": false,
+                                "optionsRef": "23.1_device_types"
+                            },
+                            {
+                                "key": "20-2-1-deviceLocation", 
+                                "label": "Device Location",
+                                "type": "text",
+                                "required": false 
+                            },
+                            {
+                                "key": "20-2-1-deficiency", 
+                                "label": "Deficiency",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-standardReference", 
+                                "label": "CAN/ULC-S536 Standard Reference Clause", 
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-dateCorrected", 
+                                "label": "Date Corrected (YYYY-MM-DD)",
+                                "type": "date",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-workOrder", 
+                                "label": "Work Order or Reference No.",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-companyCorrected", 
+                                "label": "Company Which Corrected the Deficiency",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-technician", 
+                                "label": "Technician Name",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-certificateNo", 
+                                "label": "Technician Certificate No.",
+                                "type": "text",
+                                "required": false
+                            }
+                        ]
+                    },
+                    {
+                        "id": "20.2_acknowledgement",
+                        "type": "label",
+                        "label": "I understand that all Deficiencies in the table above have been corrected:"
+                    },
+                    {
+                        "id": "20.2_acknowledgement_name",
+                        "type": "text",
+                        "label": "**Building** Owner / Owner's Representative Name",
+                        "placeholder": "Enter Name",
+                        "required": false
+                    },
+                    {
+                        "id": "20.2_acknowledgement_signature",
+                        "type": "signature",
+                        "label": "**Building** Owner / Owner's Representative Signature",
+                        "placeholder": "Sign here",
+                        "required": false
+                    },
+                    {
+                        "id": "20.2_acknowledgement_date",
+                        "type": "date",
+                        "label": "Date of Signature (YYYY-MM-DD)",
+                        "placeholder": "YYYY-MM-DD",
+                        "required": false
+                    },
+                    {
+                        "id": "20.2_acknowledgement_notice",
+                        "type": "label",
+                        "label": "NOTE: Only the above table needs to be updated on the correction of deficiencies. The entire report does not have to be reissued."
+                    }
+                ]
+            },
+            {
+                "section": "20.3",
+                "label": "### Recommendations",
+                "fields":
+                [
+                    {
+                        "id": "20.3.1_recommendation_definition",
+                        "type": "label",
+                        "label": "### For the purposes of this Standard, *Recommendation* is a proposal or suggestion as to the best course of action for improvement of system components or system operation / installation, including any safety considerations, such as:\n\n.   a) Identifying antiquated or obsolete equipment.\n\n    b) Availability of newer cost-effective technology; or\n\n    c) Alternate methods of detection."
+                    },
+                    {
+                        "id": "20.3.1_recommendations_table",
+                        "type": "table",
+                        "columns": 
+                        [
+                            {   "key": "20-3-1-itemNumber", 
+                                "label": "Recommendation #", 
+                                "type": "number", 
+                                "required": false 
+                            },
+                            {
+                                "key": "20-2-1-deviceType",
+                                "label": "Device Type (See 23.1 Field Device Testing - Legend and Notes)",
+                                "type": "select",
+                                "required": false,
+                                "optionsRef": "23.1_device_types"
+                            },
+                            {
+                                "key": "20-2-1-deviceLocation", 
+                                "label": "Device Location",
+                                "type": "text",
+                                "required": false 
+                            },
+                            {
+                                "key": "20-2-1-recommendation", 
+                                "label": "Recommendation",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-standardReference", 
+                                "label": "CAN/ULC-S536 Standard Reference Clause", 
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-dateCorrected", 
+                                "label": "Date Corrected (YYYY-MM-DD)",
+                                "type": "date",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-workOrder", 
+                                "label": "Work Order or Reference No.",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-companyCorrected", 
+                                "label": "Company Which Corrected the Deficiency",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-technician", 
+                                "label": "Technician Name",
+                                "type": "text",
+                                "required": false
+                            },
+                            { 
+                                "key": "20-2-1-certificateNo", 
+                                "label": "Technician Certificate No.",
+                                "type": "text",
+                                "required": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "section": "20.4",
+                "label": "### Technician Attendance Log",
+                "fields":
+                [
+                    {
+                        "id": "20.4_technician_log_notice",
+                        "type": "label",
+                        "label": "NOTE: See Section 7.4 of CAN/ULC-S536:2019-REV1"
+                    },
+                    {
+                        "id": "20.4_technician_log_table",
+                        "type": "table",
+                        "columns": 
+                        [
+                            {   "key": "20-4-timeIn", 
+                                "label": "Time In", 
+                                "type": "datetime", 
+                                "required": false 
+                            },
+                            {   "key": "20-4-timeOut", 
+                                "label": "Time Out", 
+                                "type": "datetime", 
+                                "required": false 
+                            },
+                            {
+                                "key": "20-4-notes",
+                                "label": "Notes (for the day)",
+                                "type": "text",
+                                "required": false
+                            },
+                            {
+                                "key": "20-4-primaryTechnicianName",
+                                "label": "Primary Technician Printed Name",
+                                "type": "text",
+                                "required": false
+                            },
+                            {
+                                "key": "20-4-primaryTechnicianCertification",
+                                "label": "Primary Technician Certification No.",
+                                "type": "text",
+                                "required": false
+                            }
+                        ]
+                    }
+
+
+                ]
+            },      
+            {
+                "section": "",
+                "label": "### ",
+                "fields":
+                [
+
+                ]
+            },      
+            {
+                "section": "",
+                "label": "### ",
+                "fields":
+                [
+
+                ]
+            },      
+            {
+                "section": "",
+                "label": "### ",
+                "fields":
+                [
+
+                ]
+            },      
+            {
+                "section": "",
+                "label": "### ",
+                "fields":
+                [
+
+                ]
+            },      
+            {
+                "section": "",
+                "label": "### ",
+                "fields":
+                [
+
+                ]
+            }      
+        ]    
+}
