@@ -1001,7 +1001,7 @@ export default function SampleSection() {
         {/* date */}
         <View style={s.card}>
           <Text style={s.cardGroupLabel}>Date Field</Text>
-          <DateField label="Date of Service" required />
+          <DateField label="Date of Service?" required />
         </View>
 
         {/* boolean_yn */}

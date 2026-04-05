@@ -1,10 +1,10 @@
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import SampleSection from "./components/SampleSection";
+import SampleSection2 from "./components/SampleSection2";
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SampleSection />
+      <SampleSection2 />
     </SafeAreaProvider>
   );
 }

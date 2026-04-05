@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
-import { FieldLabel } from "../primitives";
 
 export type TriStateVal = "pass" | "fail" | "na" | null;
 
@@ -10,6 +9,8 @@ interface Props {
   required?: boolean;
   value?: TriStateVal;
   onChange?: (val: TriStateVal) => void;
+  focused?: boolean;
+  onFocus?: () => void;
 }
 
 const opts: { value: TriStateVal; label: string; color: string; bg: string }[] =
@@ -24,16 +25,23 @@ export default function TriStateField({
   required,
   value,
   onChange,
+  focused,
+  onFocus,
 }: Props) {
   const [internal, setInternal] = useState<TriStateVal>(null);
   const val = value !== undefined ? value : internal;
+
   const handleChange = (v: TriStateVal) => {
     if (onChange) onChange(v);
     else setInternal(v);
   };
 
   return (
-    <View style={s.row}>
+    <TouchableOpacity
+      style={[s.row, focused && s.rowFocused]}
+      onPress={onFocus}
+      activeOpacity={onFocus ? 0.7 : 1}
+    >
       <Text style={s.label}>
         {label}
         {required && <Text style={s.star}> *</Text>}
@@ -49,7 +57,10 @@ export default function TriStateField({
                 borderColor: o.color,
               },
             ]}
-            onPress={() => handleChange(o.value)}
+            onPress={() => {
+              if (onFocus) onFocus();
+              handleChange(o.value);
+            }}
           >
             <Text style={[s.btnLabel, val === o.value && { color: o.color }]}>
               {o.label}
@@ -57,7 +68,7 @@ export default function TriStateField({
           </TouchableOpacity>
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -67,7 +78,15 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: Radii.md,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  rowFocused: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentSoft,
   },
   label: {
     fontSize: FontSize.md,

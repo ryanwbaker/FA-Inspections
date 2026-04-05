@@ -1,3 +1,4 @@
+import { useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
-import { FieldLabel, Divider } from "../primitives";
+import { FieldLabel } from "../primitives";
 import { TriStateField } from "../fields";
 import type { TriStateVal } from "../fields";
 
@@ -36,6 +37,74 @@ interface Props {
   onUpdate: (d: DeviceRecord) => void;
 }
 
+type FieldKey =
+  | "location"
+  | "deviceType"
+  | "circuitAddress"
+  | "fireZone"
+  | "needsService"
+  | "alarmConfirmed"
+  | "annunciatorInd"
+  | "circuitTrouble"
+  | "comments";
+
+type FieldType = "text" | "tristate";
+
+interface FieldDef {
+  key: FieldKey;
+  type: FieldType;
+  label: string;
+  hint?: string;
+  required?: boolean;
+  multiline?: boolean;
+}
+
+const FIELDS: FieldDef[] = [
+  {
+    key: "location",
+    type: "text",
+    label: "Device Location",
+    hint: "Floor, room, or area",
+    required: true,
+  },
+  {
+    key: "deviceType",
+    type: "text",
+    label: "Device Type",
+    hint: "e.g. PS, HT, M, FS",
+    required: true,
+  },
+  {
+    key: "circuitAddress",
+    type: "text",
+    label: "Circuit / Address",
+    required: true,
+  },
+  {
+    key: "fireZone",
+    type: "text",
+    label: "Annunciated Fire Zone",
+    required: true,
+  },
+  {
+    key: "needsService",
+    type: "tristate",
+    label: "Requires Service / Repairs / Cleaning",
+  },
+  {
+    key: "alarmConfirmed",
+    type: "tristate",
+    label: "Alarm / Activation Confirmed",
+  },
+  { key: "annunciatorInd", type: "tristate", label: "Annunciator Indication" },
+  {
+    key: "circuitTrouble",
+    type: "tristate",
+    label: "Supervised Circuit Trouble Signal",
+  },
+  { key: "comments", type: "text", label: "Comments", multiline: true },
+];
+
 export default function DeviceModal({
   devices,
   activeIndex,
@@ -47,44 +116,45 @@ export default function DeviceModal({
 }: Props) {
   const device = devices[activeIndex];
   const total = devices.length;
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
 
-  const textFields: {
-    key: keyof Pick<
-      DeviceRecord,
-      "location" | "deviceType" | "circuitAddress" | "fireZone"
-    >;
-    label: string;
-    hint?: string;
-    required?: boolean;
-  }[] = [
-    {
-      key: "location",
-      label: "Device Location",
-      hint: "Floor, room, or area",
-      required: true,
-    },
-    {
-      key: "deviceType",
-      label: "Device Type",
-      hint: "e.g. PS, HT, M, FS",
-      required: true,
-    },
-    { key: "circuitAddress", label: "Circuit / Address", required: true },
-    { key: "fireZone", label: "Annunciated Fire Zone", required: true },
-  ];
+  const scrollViewRef = useRef<ScrollView>(null);
+  const inputRefs = useRef<Record<string, TextInput | null>>({});
+  const fieldOffsets = useRef<Record<string, number>>({});
 
-  const triFields: {
-    key: keyof Pick<
-      DeviceRecord,
-      "needsService" | "alarmConfirmed" | "annunciatorInd" | "circuitTrouble"
-    >;
-    label: string;
-  }[] = [
-    { key: "needsService", label: "Requires Service / Repairs / Cleaning" },
-    { key: "alarmConfirmed", label: "Alarm / Activation Confirmed" },
-    { key: "annunciatorInd", label: "Annunciator Indication" },
-    { key: "circuitTrouble", label: "Supervised Circuit Trouble Signal" },
-  ];
+  const scrollToField = useCallback((key: FieldKey, extra: number = 0) => {
+    const y = fieldOffsets.current[key];
+    if (y !== undefined) {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(0, y - 24 - extra),
+        animated: true,
+      });
+    }
+  }, []);
+
+  const focusField = useCallback(
+    (index: number) => {
+      const clamped = Math.max(0, Math.min(index, FIELDS.length - 1));
+      setFocusedIndex(clamped);
+      const field = FIELDS[clamped];
+      const extra = field.type === "tristate" ? 200 : 0;
+      scrollToField(field.key, extra);
+      if (field.type === "text") {
+        setTimeout(() => inputRefs.current[field.key]?.focus(), 50);
+      }
+    },
+    [scrollToField],
+  );
+
+  const goNext = () => focusField(focusedIndex + 1);
+
+  const handleTriStateChange = (key: FieldKey, val: TriStateVal) => {
+    onUpdate({ ...device, [key]: val });
+    const currentIndex = FIELDS.findIndex((f) => f.key === key);
+    if (currentIndex < FIELDS.length - 1) {
+      setTimeout(() => focusField(currentIndex + 1), 150);
+    }
+  };
 
   return (
     <Modal visible animationType="slide" presentationStyle="pageSheet">
@@ -129,48 +199,75 @@ export default function DeviceModal({
           </View>
         </View>
 
-        {/* ── Scrollable fields ── */}
-        <ScrollView style={s.scroll} contentContainerStyle={s.content}>
-          {textFields.map((f) => (
-            <View key={f.key} style={s.fieldBlock}>
-              <FieldLabel label={f.label} required={f.required} />
-              {f.hint && <Text style={s.hint}>{f.hint}</Text>}
-              <TextInput
-                style={s.input}
-                value={device[f.key]}
-                onChangeText={(v) => onUpdate({ ...device, [f.key]: v })}
-                placeholder="Enter value…"
-                placeholderTextColor={Colors.secondary}
-              />
-            </View>
-          ))}
+        {/* ── Scrollable content ── */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={s.scroll}
+          contentContainerStyle={s.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          {FIELDS.map((field, i) => {
+            if (field.type === "text") {
+              return (
+                <View
+                  key={field.key}
+                  style={s.fieldBlock}
+                  onLayout={(e) => {
+                    fieldOffsets.current[field.key] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  <FieldLabel label={field.label} required={field.required} />
+                  {field.hint && <Text style={s.hint}>{field.hint}</Text>}
+                  <TextInput
+                    ref={(r) => {
+                      inputRefs.current[field.key] = r;
+                    }}
+                    style={[s.input, field.multiline && s.inputMulti]}
+                    value={device[field.key] as string}
+                    onChangeText={(v) =>
+                      onUpdate({ ...device, [field.key]: v })
+                    }
+                    placeholder="Enter value…"
+                    placeholderTextColor={Colors.secondary}
+                    returnKeyType={i < FIELDS.length - 1 ? "next" : "done"}
+                    onSubmitEditing={() => goNext()}
+                    onFocus={() => {
+                      setFocusedIndex(i);
+                      scrollToField(field.key);
+                    }}
+                    blurOnSubmit={field.multiline ?? false}
+                    multiline={field.multiline}
+                  />
+                </View>
+              );
+            }
 
-          <Divider />
+            if (field.type === "tristate") {
+              return (
+                <View
+                  key={field.key}
+                  onLayout={(e) => {
+                    fieldOffsets.current[field.key] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  <TriStateField
+                    label={field.label}
+                    value={device[field.key] as TriStateVal}
+                    onChange={(v) => handleTriStateChange(field.key, v)}
+                    focused={focusedIndex === i}
+                    onFocus={() => {
+                      setFocusedIndex(i);
+                      scrollToField(field.key);
+                    }}
+                  />
+                </View>
+              );
+            }
 
-          {triFields.map((f) => (
-            <TriStateField
-              key={f.key}
-              label={f.label}
-              value={device[f.key]}
-              onChange={(v) => onUpdate({ ...device, [f.key]: v })}
-            />
-          ))}
+            return null;
+          })}
 
-          <Divider />
-
-          <View style={s.fieldBlock}>
-            <FieldLabel label="Comments" />
-            <TextInput
-              style={[s.input, s.inputMulti]}
-              value={device.comments}
-              onChangeText={(v) => onUpdate({ ...device, comments: v })}
-              multiline
-              placeholder="Enter notes…"
-              placeholderTextColor={Colors.secondary}
-            />
-          </View>
-
-          <View style={{ height: 120 }} />
+          <View style={{ height: 350 }} />
         </ScrollView>
 
         {/* ── Action bar ── */}
@@ -246,7 +343,7 @@ const s = StyleSheet.create({
   },
   scroll: { flex: 1 },
   content: { padding: Spacing.lg },
-  fieldBlock: { marginBottom: Spacing.xs },
+  fieldBlock: { marginBottom: Spacing.md },
   hint: {
     fontSize: FontSize.sm,
     color: Colors.secondary,
