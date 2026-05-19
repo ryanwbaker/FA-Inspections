@@ -32,107 +32,72 @@ This roadmap prioritizes:
 
 ---
 
-# Stage 1 — Form Engine (UI Only)
+# Stage 1 — Form Engine (UI Only) ✓ Complete
 
-## Goal
-Build a dynamic, paginated inspection UI system without backend or auth.
+## Stack Used
+- Expo bare workflow + React Native (plain StyleSheet — no Tamagui)
+- useReducer + React Context (no React Hook Form)
+- Static JSON schema (no Zod validation yet)
 
-## Stack
-- Expo + React Native
-- Tamagui
-- React Hook Form
-- Zod (basic validation only)
-- Static mock JSON data
-
-## Deliverables
-
-### Component System
-
-Create standardized components:
-
-- FormRenderer
-- FormSection
-- FormField
-- DeviceTable
-- CheckboxGroup
-- SignatureBlock
-- PaginationStepper
-
-Focus on:
-
-- Clean visual hierarchy
-- Smooth pagination
-- Performance with 1,000+ rows
-- Field validation feedback
-- One-handed field usability
-
-No persistence. No backend. No auth.
-
-Outcome: A reusable inspection form UI framework.
+## Built
+- Schema-driven paginated form UI
+- SectionPage, FormField, PaginationStepper, SectionSidebar
+- DeviceList, ItemList, LegendTable
+- All field types: string, number, date, phone, boolean_yn, tri_state, radio, multi_checkbox, signature
+- Repeatable sections and repeatable lists
+- Optional sections with applicable_toggle
+- Collapsible sidebar with section navigation + add/remove group instances
 
 ---
 
-# Stage 2 — Schema System
+# Stage 2 — Schema System ✓ Complete
 
-## Goal
-Extract the schema definition from the UI. Convert hardcoded UI into a dynamic renderer.
-
-## Core Types (Conceptual)
+## Core Types (Actual)
 
 FieldDefinition:
-- id: string
-- type: "text" | "number" | "checkbox" | "table" | "signature"
-- label: string
-- required?: boolean
-- validation?: Zod schema
+- id, label, type, required?, options?, conditional_on?, hint?, auto_increment?, source?, group_label?
 
 SectionDefinition:
-- id: string
-- title: string
-- fields: FieldDefinition[]
+- id, title, description?, type?, fields?, subsections?, item_fields?, instance_label?, applicable_toggle?, clause?
 
 InspectionSchema:
-- version: string
-- sections: SectionDefinition[]
+- id, title, version, description, defaults, sections[], field_type_definitions
 
-## Deliverables
+## Built
+- Full CAN/ULC-S536:2019 schema in `schema/can_ulc_s536.json`
+- `group_label` on FieldDefinition for inline visual grouping within a card (no extra pagination)
+- FormPage model derived via useMemo from repeatableGroups + applicableStates
+- Conditional field rendering (value, contains, contains_any, value_in)
 
-- FormRenderer driven entirely by schema
-- Versioned schema objects
-- Dynamic field rendering
-- Validation driven from schema
-- Pagination driven by schema sections
-
-Outcome: Core inspection engine with versionable standards.
+## Notes
+- Company profile (name, address, credentials) will be a separate profile/settings feature in Stage 4+. Do not add company address fields to the inspection schema — the inspection covers the site only.
 
 ---
 
-# Stage 3 — Local Persistence (Offline-Only)
+# Stage 3 — Local Persistence (Offline-Only) ✓ Complete
 
-## Goal
-Add local draft saving without backend.
+## Stack Used
+- expo-file-system/legacy (JSON files in app sandbox — not SQLite)
+- expo-sharing (share sheet for file export)
+- expo-document-picker (import from Files app)
 
-## Stack
-- Expo SQLite
+## Built
+- InspectionDocument as a single JSON blob per inspection
+- InspectionContext (useReducer) — all form state flows through this
+- Auto-save with 2s debounce; Save As; Share via iOS share sheet
+- Home screen (SchemaListScreen) lists all saved inspections with open/delete/import
+- Inspection document structure:
+  - id, schemaId, schemaVersion, status (draft | signed)
+  - filename, filePath, createdAt, updatedAt
+  - fieldValues: Record<string, string>  — keyed `${groupKey}/${fieldId}`
+  - listItems: Record<string, StoredListItem[]>
+  - deviceRecords: Record<string, DeviceRecord[]>
+  - legend: DeviceLegendEntry[]
+  - repeatableGroups: Record<string, string[]>
+  - applicableStates: Record<string, boolean>
 
-## Features
-
-- Save inspection draft locally
-- Load draft
-- Edit draft
-- Duplicate inspection (simulate annual rollover)
-- Persist schema version with each inspection
-
-Inspection structure:
-
-- id: string
-- schemaVersion: string
-- status: "draft" | "signed"
-- data: JSON object
-- createdAt: Date
-- updatedAt: Date
-
-At this stage: app works fully offline, no authentication, no cloud sync.
+## Notes
+- Files save to the iOS app sandbox (`Documents/inspections/`). They are NOT visible in the iOS Files app without `UIFileSharingEnabled` in Info.plist. Share sheet is the correct export path for now.
 
 Outcome: Fully functional offline inspection app.
 

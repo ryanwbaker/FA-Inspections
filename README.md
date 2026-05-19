@@ -95,6 +95,7 @@ Fields are the leaf-level inputs. They appear inside `fields`, `subsections[].fi
 | `hint` | string | no | Placeholder or helper text shown inside the input |
 | `auto_increment` | boolean | no | Automatically sets integer value on each new list item |
 | `source` | string | no | Reference to a `device_type_legend` or lookup table (e.g. `"s23_1.device_type_legend"`) |
+| `group_label` | string | no | Renders a labeled section header before this field within its card. Use on the first field of a logical group (e.g. address fields). |
 
 ### Field Types
 
@@ -234,9 +235,9 @@ This app is being built in stages. See [claude.md](claude.md) for the full roadm
 
 | Stage | Description | Status |
 |---|---|---|
-| 1 | Form Engine (UI Only) | In progress |
-| 2 | Schema System | In progress |
-| 3 | Local Persistence (Offline) | Planned |
+| 1 | Form Engine (UI Only) | Complete |
+| 2 | Schema System | Complete |
+| 3 | Local Persistence (Offline) | Complete |
 | 4 | Backend + Multi-Tenant | Planned |
 | 5 | Admin Panel | Planned |
 | 6 | Real Offline Sync | Planned |
