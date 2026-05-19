@@ -16,6 +16,8 @@ import { FieldLabel } from "../primitives";
 interface Props {
   label: string;
   required?: boolean;
+  value?: string | null;
+  onChange?: (val: string | null) => void;
 }
 
 const sigWebStyle = `
@@ -85,8 +87,13 @@ const sigWebStyle = `
   }
 `;
 
-export default function SignatureField({ label, required }: Props) {
-  const [sig, setSig] = useState<string | null>(null);
+export default function SignatureField({ label, required, value, onChange }: Props) {
+  const [internal, setInternal] = useState<string | null>(null);
+  const sig = value !== undefined ? value : internal;
+  const setSig = (v: string | null) => {
+    if (onChange) onChange(v);
+    else setInternal(v);
+  };
   const [modalVisible, setModalVisible] = useState(false);
   const [timestamp, setTimestamp] = useState<string | null>(null);
 

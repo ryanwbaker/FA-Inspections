@@ -13,6 +13,8 @@ import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
 import { FieldLabel } from "../primitives";
 import { TriStateField } from "../fields";
 import type { TriStateVal } from "../fields";
+import DeviceTypePicker from "./DeviceTypePicker";
+import type { DeviceLegendEntry } from "../../constants/legend";
 
 export interface DeviceRecord {
   id: string;
@@ -30,6 +32,7 @@ export interface DeviceRecord {
 interface Props {
   devices: DeviceRecord[];
   activeIndex: number;
+  legend: DeviceLegendEntry[];
   onNavigate: (index: number) => void;
   onSaveClose: () => void;
   onSaveNew: () => void;
@@ -48,7 +51,7 @@ type FieldKey =
   | "circuitTrouble"
   | "comments";
 
-type FieldType = "text" | "tristate";
+type FieldType = "text" | "tristate" | "picker";
 
 interface FieldDef {
   key: FieldKey;
@@ -69,9 +72,8 @@ const FIELDS: FieldDef[] = [
   },
   {
     key: "deviceType",
-    type: "text",
+    type: "picker",
     label: "Device Type",
-    hint: "e.g. PS, HT, M, FS",
     required: true,
   },
   {
@@ -108,6 +110,7 @@ const FIELDS: FieldDef[] = [
 export default function DeviceModal({
   devices,
   activeIndex,
+  legend,
   onNavigate,
   onSaveClose,
   onSaveNew,
@@ -117,6 +120,9 @@ export default function DeviceModal({
   const device = devices[activeIndex];
   const total = devices.length;
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+
+  const selectedEntry = legend.find(e => e.id === device.deviceType) ?? null;
 
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRefs = useRef<Record<string, TextInput | null>>({});
@@ -207,6 +213,39 @@ export default function DeviceModal({
           keyboardShouldPersistTaps="handled"
         >
           {FIELDS.map((field, i) => {
+            if (field.type === "picker") {
+              return (
+                <View
+                  key={field.key}
+                  style={s.fieldBlock}
+                  onLayout={(e) => {
+                    fieldOffsets.current[field.key] = e.nativeEvent.layout.y;
+                  }}
+                >
+                  <FieldLabel label={field.label} required={field.required} />
+                  <TouchableOpacity
+                    style={s.pickerBtn}
+                    onPress={() => setShowTypePicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    {selectedEntry ? (
+                      <View style={s.pickerSelected}>
+                        <View style={s.pickerBadge}>
+                          <Text style={s.pickerBadgeText}>{selectedEntry.code}</Text>
+                        </View>
+                        <Text style={s.pickerBadgeDesc} numberOfLines={1}>
+                          {selectedEntry.description}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={s.pickerPlaceholder}>Select device type…</Text>
+                    )}
+                    <Text style={s.pickerChevron}>›</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
             if (field.type === "text") {
               return (
                 <View
@@ -283,6 +322,15 @@ export default function DeviceModal({
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {showTypePicker && (
+        <DeviceTypePicker
+          legend={legend}
+          selectedId={device.deviceType}
+          onSelect={entry => onUpdate({ ...device, deviceType: entry.id })}
+          onClose={() => setShowTypePicker(false)}
+        />
+      )}
     </Modal>
   );
 }
@@ -360,6 +408,31 @@ const s = StyleSheet.create({
     color: Colors.primary,
   },
   inputMulti: { minHeight: 90, textAlignVertical: "top" },
+  pickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.md,
+  },
+  pickerSelected: { flex: 1, flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  pickerBadge: {
+    backgroundColor: Colors.accentSoft,
+    borderRadius: Radii.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    minWidth: 44,
+    alignItems: "center",
+    flexShrink: 0,
+  },
+  pickerBadgeText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.accent },
+  pickerBadgeDesc: { flex: 1, fontSize: FontSize.md, color: Colors.primary },
+  pickerPlaceholder: { flex: 1, fontSize: FontSize.lg, color: Colors.secondary },
+  pickerChevron: { fontSize: 18, color: Colors.secondary },
   actions: {
     flexDirection: "row",
     gap: Spacing.sm,

@@ -1,10 +1,10 @@
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import SampleSection2 from "./components/SampleSection2";
+import RootNavigator from "./navigation/RootNavigator";
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <SampleSection2 />
+      <RootNavigator />
     </SafeAreaProvider>
   );
 }

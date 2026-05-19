@@ -1,15 +1,6 @@
-import { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  StyleSheet,
-} from "react-native";
+import { useState } from "react";
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Platform } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
 import { FieldLabel } from "../primitives";
 
@@ -20,132 +11,23 @@ interface Props {
   onChange?: (val: string) => void;
 }
 
-const ITEM_HEIGHT = 44;
-const VISIBLE_ITEMS = 5;
-const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
-
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const DAYS = Array.from({ length: 31 }, (_, i) =>
-  String(i + 1).padStart(2, "0"),
-);
-
-const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 10 }, (_, i) => String(currentYear - 2 + i));
-
-function formatDate(month: number, day: number, year: string): string {
-  const mm = String(month + 1).padStart(2, "0");
-  const dd = String(day + 1).padStart(2, "0");
-  const yy = year.slice(2);
-  return `${mm}/${dd}/${yy}`;
-}
-
-function parseToIndices(val: string): {
-  month: number;
-  day: number;
-  year: number;
-} {
-  const parts = val.split("/");
-  if (parts.length === 3) {
-    const mm = parseInt(parts[0]) - 1;
-    const dd = parseInt(parts[1]) - 1;
-    const yy = parseInt("20" + parts[2]);
-    const yearIdx = YEARS.indexOf(String(yy));
-    if (mm >= 0 && mm < 12 && dd >= 0 && dd < 31 && yearIdx >= 0) {
-      return { month: mm, day: dd, year: yearIdx };
+function toDate(val: string): Date {
+  if (val) {
+    const parts = val.split("/");
+    if (parts.length === 3) {
+      const year = parseInt(parts[2].length === 2 ? "20" + parts[2] : parts[2]);
+      const d = new Date(year, parseInt(parts[0]) - 1, parseInt(parts[1]));
+      if (!isNaN(d.getTime())) return d;
     }
   }
-  const now = new Date();
-  return {
-    month: now.getMonth(),
-    day: now.getDate() - 1,
-    year: YEARS.indexOf(String(now.getFullYear())),
-  };
+  return new Date();
 }
 
-function WheelPicker({
-  items,
-  selectedIndex,
-  onSelect,
-}: {
-  items: string[];
-  selectedIndex: number;
-  onSelect: (index: number) => void;
-}) {
-  const scrollRef = useRef<ScrollView>(null);
-  const lastIndex = useRef(selectedIndex);
-
-  const scrollToIndex = (index: number, animated = true) => {
-    scrollRef.current?.scrollTo({ y: index * ITEM_HEIGHT, animated });
-  };
-
-  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-    const clamped = Math.max(0, Math.min(index, items.length - 1));
-    if (clamped !== lastIndex.current) {
-      lastIndex.current = clamped;
-      onSelect(clamped);
-    }
-    scrollToIndex(clamped);
-  };
-
-  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-    const clamped = Math.max(0, Math.min(index, items.length - 1));
-    if (clamped !== lastIndex.current) {
-      lastIndex.current = clamped;
-      onSelect(clamped);
-    }
-    scrollToIndex(clamped);
-  };
-
-  return (
-    <View style={w.container}>
-      {/* Selection highlight */}
-      <View style={w.highlight} pointerEvents="none" />
-      <ScrollView
-        ref={scrollRef}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_HEIGHT}
-        decelerationRate="fast"
-        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * 2 }}
-        onMomentumScrollEnd={handleMomentumEnd}
-        onScrollEndDrag={handleScrollEnd}
-        onLayout={() => scrollToIndex(selectedIndex, false)}
-      >
-        {items.map((item, i) => (
-          <TouchableOpacity
-            key={item}
-            style={w.item}
-            onPress={() => {
-              lastIndex.current = i;
-              onSelect(i);
-              scrollToIndex(i);
-            }}
-          >
-            <Text
-              style={[w.itemText, i === selectedIndex && w.itemTextSelected]}
-            >
-              {item}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
+function toDisplay(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yy = String(d.getFullYear()).slice(2);
+  return `${mm}/${dd}/${yy}`;
 }
 
 export default function DateField({ label, required, value, onChange }: Props) {
@@ -153,54 +35,61 @@ export default function DateField({ label, required, value, onChange }: Props) {
   const [showPicker, setShowPicker] = useState(false);
 
   const val = value !== undefined ? value : internal;
-  const indices = parseToIndices(val);
+  const currentDate = toDate(val);
 
-  const [selMonth, setSelMonth] = useState(indices.month);
-  const [selDay, setSelDay] = useState(indices.day);
-  const [selYear, setSelYear] = useState(Math.max(0, indices.year));
-
-  const handleTextChange = (text: string) => {
-    if (onChange) onChange(text);
-    else setInternal(text);
+  const commit = (d: Date) => {
+    const formatted = toDisplay(d);
+    if (onChange) onChange(formatted);
+    else setInternal(formatted);
   };
 
+  // Android: picker renders inline on change event — no modal needed
+  if (Platform.OS === "android") {
+    return (
+      <View style={s.container}>
+        <FieldLabel label={label} required={required} />
+        <TouchableOpacity style={s.input} onPress={() => setShowPicker(true)}>
+          <Text style={val ? s.inputText : s.placeholder}>{val || "MM/DD/YY"}</Text>
+          <Text style={s.calIcon}>📅</Text>
+        </TouchableOpacity>
+        {showPicker && (
+          <DateTimePicker
+            value={currentDate}
+            mode="date"
+            onChange={(_, d) => {
+              setShowPicker(false);
+              if (d) commit(d);
+            }}
+          />
+        )}
+      </View>
+    );
+  }
+
+  // iOS: show native spinner in a bottom sheet modal
+  const [draft, setDraft] = useState(currentDate);
+
   const handleOpen = () => {
-    const idx = parseToIndices(val);
-    setSelMonth(idx.month);
-    setSelDay(idx.day);
-    setSelYear(Math.max(0, idx.year));
+    setDraft(toDate(val));
     setShowPicker(true);
   };
 
   const handleDone = () => {
-    const formatted = formatDate(selMonth, selDay, YEARS[selYear]);
-    if (onChange) onChange(formatted);
-    else setInternal(formatted);
+    commit(draft);
     setShowPicker(false);
   };
 
   return (
     <View style={s.container}>
       <FieldLabel label={label} required={required} />
-      <View style={s.row}>
-        <TextInput
-          style={s.input}
-          value={val}
-          onChangeText={handleTextChange}
-          placeholder="MM/DD/YY"
-          placeholderTextColor={Colors.secondary}
-          keyboardType="numbers-and-punctuation"
-          maxLength={8}
-        />
-        <TouchableOpacity style={s.calBtn} onPress={handleOpen}>
-          <Text style={s.calIcon}>📅</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={s.input} onPress={handleOpen}>
+        <Text style={val ? s.inputText : s.placeholder}>{val || "MM/DD/YY"}</Text>
+        <Text style={s.calIcon}>📅</Text>
+      </TouchableOpacity>
 
       <Modal visible={showPicker} transparent animationType="slide">
         <View style={s.overlay}>
           <View style={s.sheet}>
-            {/* Header */}
             <View style={s.sheetHeader}>
               <TouchableOpacity onPress={() => setShowPicker(false)}>
                 <Text style={s.cancelText}>Cancel</Text>
@@ -210,38 +99,13 @@ export default function DateField({ label, required, value, onChange }: Props) {
                 <Text style={s.doneText}>Done</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Column labels */}
-            <View style={s.colLabels}>
-              <Text style={[s.colLabel, { flex: 2 }]}>Month</Text>
-              <Text style={[s.colLabel, { flex: 1 }]}>Day</Text>
-              <Text style={[s.colLabel, { flex: 1 }]}>Year</Text>
-            </View>
-
-            {/* Wheels */}
-            <View style={s.wheels}>
-              <View style={{ flex: 2 }}>
-                <WheelPicker
-                  items={MONTHS}
-                  selectedIndex={selMonth}
-                  onSelect={setSelMonth}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <WheelPicker
-                  items={DAYS}
-                  selectedIndex={selDay}
-                  onSelect={setSelDay}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <WheelPicker
-                  items={YEARS}
-                  selectedIndex={selYear}
-                  onSelect={setSelYear}
-                />
-              </View>
-            </View>
+            <DateTimePicker
+              value={draft}
+              mode="date"
+              display="spinner"
+              onChange={(_, d) => { if (d) setDraft(d); }}
+              style={s.picker}
+            />
           </View>
         </View>
       </Modal>
@@ -251,30 +115,20 @@ export default function DateField({ label, required, value, onChange }: Props) {
 
 const s = StyleSheet.create({
   container: { marginBottom: Spacing.xs },
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
   input: {
-    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: Radii.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    fontSize: FontSize.lg,
-    color: Colors.primary,
-    maxWidth: 180,
+    gap: Spacing.sm,
   },
-  calBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.inputBg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  calIcon: { fontSize: 20 },
+  inputText: { flex: 1, fontSize: FontSize.lg, color: Colors.primary },
+  placeholder: { flex: 1, fontSize: FontSize.lg, color: Colors.secondary },
+  calIcon: { fontSize: 18 },
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -285,6 +139,7 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: "hidden",
+    paddingBottom: Spacing.xl,
   },
   sheetHeader: {
     flexDirection: "row",
@@ -306,40 +161,5 @@ const s = StyleSheet.create({
     color: Colors.accent,
     fontWeight: FontWeight.semibold,
   },
-  colLabels: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-  },
-  colLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    color: Colors.secondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    textAlign: "center",
-  },
-  wheels: {
-    flexDirection: "row",
-    paddingHorizontal: Spacing.sm,
-    paddingBottom: Spacing.xl,
-  },
-});
-
-const w = StyleSheet.create({
-  container: { height: WHEEL_HEIGHT, overflow: "hidden" },
-  highlight: {
-    position: "absolute",
-    top: ITEM_HEIGHT * 2,
-    height: ITEM_HEIGHT,
-    left: 4,
-    right: 4,
-    backgroundColor: Colors.accentSoft,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  item: { height: ITEM_HEIGHT, alignItems: "center", justifyContent: "center" },
-  itemText: { fontSize: FontSize.lg, color: Colors.secondary },
-  itemTextSelected: { color: Colors.primary, fontWeight: FontWeight.semibold },
+  picker: { width: "100%" },
 });

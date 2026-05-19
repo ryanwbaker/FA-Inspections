@@ -14,7 +14,6 @@ import {
   DropdownField,
   PassFailField,
   SignatureField,
-  DeviceList,
 } from "./index";
 
 export default function SampleSection() {
@@ -143,7 +142,7 @@ export default function SampleSection() {
           <Text style={s.cardGroupLabel}>
             Repeatable List — Device Record (§23.2)
           </Text>
-          <DeviceList />
+          {/* DeviceList requires InspectionContext — use inside InspectionScreen */}
         </View>
       </ScrollView>
     </SafeAreaView>

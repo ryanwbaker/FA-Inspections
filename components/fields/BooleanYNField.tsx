@@ -6,10 +6,18 @@ import { FieldLabel } from "../primitives";
 interface Props {
   label: string;
   required?: boolean;
+  value?: boolean | null;
+  onChange?: (val: boolean | null) => void;
 }
 
-export default function BooleanYNField({ label, required }: Props) {
-  const [val, setVal] = useState<boolean | null>(null);
+export default function BooleanYNField({ label, required, value, onChange }: Props) {
+  const [internal, setInternal] = useState<boolean | null>(null);
+  const val = value !== undefined ? value : internal;
+  const handlePress = (opt: boolean) => {
+    const next = val === opt ? null : opt;
+    if (onChange) onChange(next);
+    else setInternal(next);
+  };
 
   return (
     <View style={s.container}>
@@ -19,7 +27,7 @@ export default function BooleanYNField({ label, required }: Props) {
           <TouchableOpacity
             key={String(opt)}
             style={[s.btn, val === opt && s.btnActive]}
-            onPress={() => setVal(opt)}
+            onPress={() => handlePress(opt)}
           >
             <Text style={[s.btnLabel, val === opt && s.btnLabelActive]}>
               {opt ? "Yes" : "No"}

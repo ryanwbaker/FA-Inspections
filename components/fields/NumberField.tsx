@@ -7,10 +7,17 @@ interface Props {
   label: string;
   required?: boolean;
   decimal?: boolean;
+  value?: string;
+  onChange?: (val: string) => void;
 }
 
-export default function NumberField({ label, required, decimal }: Props) {
-  const [val, setVal] = useState("");
+export default function NumberField({ label, required, decimal, value, onChange }: Props) {
+  const [internal, setInternal] = useState("");
+  const val = value !== undefined ? value : internal;
+  const setVal = (v: string) => {
+    if (onChange) onChange(v);
+    else setInternal(v);
+  };
 
   return (
     <View style={s.container}>

@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
 import DeviceModal, { DeviceRecord } from "./DeviceModal";
+import { ConfirmModal } from "../primitives";
+import type { DeviceLegendEntry } from "../../constants/legend";
+import { useInspection } from "../../context/InspectionContext";
 
 function newDevice(): DeviceRecord {
   return {
@@ -32,10 +35,21 @@ function StatusDot({ value }: { value: TriStateVal }) {
   return <View style={[s.dot, { backgroundColor: color }]} />;
 }
 
-export default function DeviceList() {
-  const [devices, setDevices] = useState<DeviceRecord[]>([]);
+interface Props {
+  legend: DeviceLegendEntry[]
+  groupKey: string
+  targetId: string
+}
+
+export default function DeviceList({ legend, groupKey, targetId }: Props) {
+  const { doc, dispatch } = useInspection()
+  const ctxKey = `${groupKey}/${targetId}`
+  const devices = doc.deviceRecords[ctxKey] ?? []
+  const saveDevices = (records: DeviceRecord[]) =>
+    dispatch({ type: 'SET_DEVICE_RECORDS', key: ctxKey, records })
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<DeviceRecord[]>([]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const openModal = (index: number) => {
     setDraft([...devices]);
@@ -53,14 +67,14 @@ export default function DeviceList() {
   };
 
   const handleSaveClose = () => {
-    setDevices(draft);
+    saveDevices(draft);
     setActiveIndex(null);
   };
 
   const handleSaveNew = () => {
     const next = [...draft, newDevice()];
     setDraft(next);
-    setDevices(next);
+    saveDevices(next);
     setActiveIndex(next.length - 1);
   };
 
@@ -68,16 +82,7 @@ export default function DeviceList() {
     setActiveIndex(null);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert("Remove Device", "Remove this device record?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => setDevices((prev) => prev.filter((x) => x.id !== id)),
-      },
-    ]);
-  };
+  const handleDelete = (id: string) => setConfirmDeleteId(id);
 
   return (
     <View>
@@ -87,7 +92,10 @@ export default function DeviceList() {
         </Text>
       )}
 
-      {devices.map((d, i) => (
+      {devices.map((d, i) => {
+        const entry = legend.find(e => e.id === d.deviceType)
+        const code = entry?.code ?? (d.deviceType || "?")
+        return (
         <TouchableOpacity
           key={d.id}
           style={s.row}
@@ -96,7 +104,7 @@ export default function DeviceList() {
         >
           <View style={s.rowInner}>
             <View style={s.badge}>
-              <Text style={s.badgeText}>{d.deviceType || "?"}</Text>
+              <Text style={s.badgeText}>{code}</Text>
             </View>
             <View style={s.summary}>
               <Text style={s.summaryTitle} numberOfLines={1}>
@@ -122,7 +130,8 @@ export default function DeviceList() {
             <Text style={s.deleteBtnText}>✕</Text>
           </TouchableOpacity>
         </TouchableOpacity>
-      ))}
+        )
+      })}
 
       <TouchableOpacity style={s.addBtn} onPress={openNew}>
         <Text style={s.addBtnText}>+ Add Device</Text>
@@ -132,6 +141,7 @@ export default function DeviceList() {
         <DeviceModal
           devices={draft}
           activeIndex={activeIndex}
+          legend={legend}
           onNavigate={setActiveIndex}
           onSaveClose={handleSaveClose}
           onSaveNew={handleSaveNew}
@@ -139,6 +149,19 @@ export default function DeviceList() {
           onUpdate={handleUpdate}
         />
       )}
+
+      <ConfirmModal
+        visible={!!confirmDeleteId}
+        title="Remove Device"
+        message="Remove this device record?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          saveDevices(devices.filter(x => x.id !== confirmDeleteId));
+          setConfirmDeleteId(null);
+        }}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </View>
   );
 }

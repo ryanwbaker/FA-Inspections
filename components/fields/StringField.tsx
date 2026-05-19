@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { Colors, FontSize, Spacing, Radii } from "../../tokens";
 import { FieldLabel } from "../primitives";
@@ -7,6 +8,8 @@ interface Props {
   required?: boolean;
   multiline?: boolean;
   hint?: string;
+  value?: string;
+  onChange?: (val: string) => void;
 }
 
 export default function StringField({
@@ -14,8 +17,15 @@ export default function StringField({
   required,
   multiline,
   hint,
+  value,
+  onChange,
 }: Props) {
-  const [val, setVal] = require("react").useState("");
+  const [internal, setInternal] = useState("");
+  const val = value !== undefined ? value : internal;
+  const setVal = (v: string) => {
+    if (onChange) onChange(v);
+    else setInternal(v);
+  };
 
   return (
     <View style={s.container}>
