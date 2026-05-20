@@ -26,9 +26,14 @@
           "id": "s20_1_service",
           "title": "Service Company Information",
           "fields": [
-            { "id": "svc_company_name",    "label": "Company Name",        "type": "string" },
-            { "id": "svc_phone",           "label": "Company Phone",       "type": "phone" },
-            { "id": "svc_contact",         "label": "Contact Person",      "type": "string",   "required": false },
+            { "id": "svc_company_name",  "label": "Company Name",       "type": "string" },
+            { "id": "svc_phone",         "label": "Company Phone",      "type": "phone" },
+            { "id": "svc_address_1",     "label": "Address 1",          "type": "string",  "group_label": "Location" },
+            { "id": "svc_address_2",     "label": "Address 2",          "type": "string",  "required": false },
+            { "id": "svc_city",          "label": "City",               "type": "string" },
+            { "id": "svc_province",      "label": "Province / State",   "type": "string" },
+            { "id": "svc_postal_code",   "label": "Postal / ZIP Code",  "type": "string" },
+            { "id": "svc_contact",       "label": "Contact Person",     "type": "string",  "required": false, "group_label": "Inspection" },
             { "id": "date_of_service",     "label": "Date of Service",     "type": "date" },
             { "id": "last_service_date",   "label": "Last Service Date",   "type": "date" },
             { "id": "work_order_number",   "label": "Work Order Number",   "type": "string" }

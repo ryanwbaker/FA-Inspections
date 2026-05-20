@@ -67,10 +67,22 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
 
   return (
     <SafeAreaView style={s.safe}>
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+      {/* Fixed header */}
+      <View style={s.header}>
+        <View>
+          <Text style={s.appTitle}>FA Inspections</Text>
+          <Text style={s.appSubtitle}>CAN/ULC-S536:2019</Text>
+        </View>
+        <TouchableOpacity
+          style={s.settingsBtn}
+          onPress={() => navigation.navigate('Settings')}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={s.settingsIcon}>⚙</Text>
+        </TouchableOpacity>
+      </View>
 
-        <Text style={s.appTitle}>FA Inspections</Text>
-        <Text style={s.appSubtitle}>CAN/ULC-S536:2019</Text>
+      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
         {/* ── Saved inspections ──────────────────────────────────────── */}
         <Text style={s.sectionLabel}>Saved</Text>
@@ -174,6 +186,14 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg },
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.bg,
+  },
   appTitle: {
     fontSize: 28,
     fontWeight: FontWeight.bold,
@@ -183,7 +203,16 @@ const s = StyleSheet.create({
   appSubtitle: {
     fontSize: FontSize.md,
     color: Colors.secondary,
-    marginBottom: Spacing.xl,
+  },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 22,
+    color: Colors.secondary,
   },
 
   sectionLabel: {

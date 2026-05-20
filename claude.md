@@ -103,7 +103,52 @@ Outcome: Fully functional offline inspection app.
 
 ---
 
-# Stage 4 — Backend + Multi-Tenant Structure
+# Stage 3.5 — Company Profile + Settings ✓ Complete
+
+## Built
+- `services/companyProfile.ts` — load/save profile as JSON in sandbox (`Documents/settings/`)
+- `screens/SettingsScreen.tsx` — company name, phone, address, logo (picked via document picker)
+- Settings accessible via ⚙ button on home screen
+- New inspections auto-populate service company fields (svc_*) from saved profile
+- On file load: if file has different company name than settings, user is prompted — "Use My Settings" or "Keep File Data"
+- Logo stored as a copied image file in `Documents/settings/logo.{ext}`
+
+## Notes
+- Signatures are stored as base64 data URIs in `fieldValues`. This is fine for local JSON (typically 20–50 KB per signature). When cloud sync is added in Stage 6, extract to Supabase Storage and replace with a URL. For PDF generation, base64 embeds directly into HTML — no change needed.
+- Company profile fields map to the `s20_1_service` subsection (`groupKey: s20_1__0`).
+
+---
+
+# Stage 4 — PDF Generation (Next Priority)
+
+## Goal
+Generate a compliant CAN/ULC-S536 inspection report PDF from within the app.
+
+## Approach
+Mobile-first: generate HTML from the inspection document, render it in a WebView, and print/export via the iOS print system (AirPrint / Save to Files). No server required.
+
+## Stack (proposed)
+- `react-native-webview` — render the HTML report preview
+- `expo-print` — convert HTML to PDF using iOS WKWebView print pipeline
+- `expo-sharing` — share/export the resulting PDF file
+
+## Deliverables
+- HTML report template matching CAN/ULC-S536 layout
+  - Cover page: company logo, company info, building info, system info
+  - One section per schema section, preserving clause references
+  - Device tables, item lists, tri-state results with pass/fail/na styling
+  - Signature fields rendered as embedded images (base64)
+- PDF generation triggered from the inspection sidebar ("Export PDF…")
+- PDF saved to sandbox, then shared via share sheet
+
+## Notes
+- Generate PDF client-side only. No server dependency at this stage.
+- Company logo (base64 or file URI) and signatures (base64) embed directly into HTML.
+- Signed inspections should generate a final PDF automatically on signing.
+
+---
+
+# Stage 5 — Backend + Multi-Tenant Structure
 
 ## Goal
 Introduce cloud persistence and organization separation.
@@ -135,7 +180,7 @@ Outcome: Multi-tenant cloud-backed SaaS foundation.
 
 ---
 
-# Stage 5 — Admin Panel (Web Dashboard)
+# Stage 6 — Admin Panel (Web Dashboard)
 
 ## Goal
 Create internal and organization admin tooling.
@@ -157,7 +202,7 @@ Outcome: Sales-ready and support-ready tooling.
 
 ---
 
-# Stage 6 — Real Offline Sync
+# Stage 7 — Real Offline Sync
 
 ## Goal
 Upgrade from local-only persistence to full offline-first sync.
@@ -181,7 +226,7 @@ Outcome: Production-grade offline reliability.
 
 ---
 
-# Stage 7 — PDF Generation + Audit Logs
+# Stage 8 — PDF Generation + Audit Logs
 
 ## Audit Logs Table
 
@@ -203,7 +248,7 @@ Outcome: Compliance-ready, legally defensible records.
 
 ---
 
-# Stage 8 — Billing (Stripe)
+# Stage 9 — Billing (Stripe)
 
 ## Goal
 Monetize per organization.

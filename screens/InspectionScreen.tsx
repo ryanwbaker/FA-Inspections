@@ -14,6 +14,9 @@ import { STANDARD_LEGEND } from '../constants/legend'
 import type { InspectionDocument } from '../types/inspection'
 import { InspectionProvider, useInspection } from '../context/InspectionContext'
 import { saveInspection, saveInspectionAs, loadInspection, shareInspection } from '../services/inspectionFiles'
+import {
+  loadProfile, profileToSvcValues, profileIsPopulated, fileSvcDiffersFromProfile,
+} from '../services/companyProfile'
 
 // ─── Page model ──────────────────────────────────────────────────────────────
 
@@ -330,23 +333,84 @@ export default function InspectionScreen({ route, navigation }: InspectionScreen
   const { schemaId, loadFilePath } = route.params
   const schema = getSchema(schemaId)
 
-  // Always call hooks unconditionally — initialise synchronously for new
-  // inspections, leave null for file-loads (filled by the effect below).
-  const [initialDoc, setInitialDoc] = useState<InspectionDocument | null>(
-    () => (schema && !loadFilePath) ? createInitialDocument(schema) : null,
-  )
+  const [initialDoc, setInitialDoc] = useState<InspectionDocument | null>(null)
+
+  // pendingConflict holds a loaded file doc alongside profile-prefilled values,
+  // waiting for the user to choose which company info to use.
+  const [pendingConflict, setPendingConflict] = useState<{
+    doc: InspectionDocument
+    profileValues: Record<string, string>
+  } | null>(null)
 
   useEffect(() => {
-    if (!loadFilePath || !schema) return
-    loadInspection(loadFilePath)
-      .then(doc => setInitialDoc(doc))
-      .catch(() => setInitialDoc(createInitialDocument(schema)))
-  }, [loadFilePath])
+    if (!schema) return
+
+    if (loadFilePath) {
+      loadInspection(loadFilePath)
+        .then(async doc => {
+          const profile = await loadProfile()
+          if (profileIsPopulated(profile) && fileSvcDiffersFromProfile(doc.fieldValues, profile)) {
+            setPendingConflict({ doc, profileValues: profileToSvcValues(profile) })
+          } else if (profileIsPopulated(profile)) {
+            // File has no company name — silently pre-fill from profile
+            setInitialDoc({ ...doc, fieldValues: { ...doc.fieldValues, ...profileToSvcValues(profile) } })
+          } else {
+            setInitialDoc(doc)
+          }
+        })
+        .catch(async () => {
+          const profile = await loadProfile()
+          const doc = createInitialDocument(schema)
+          setInitialDoc({ ...doc, fieldValues: { ...doc.fieldValues, ...profileToSvcValues(profile) } })
+        })
+    } else {
+      loadProfile()
+        .then(profile => {
+          const doc = createInitialDocument(schema)
+          setInitialDoc({ ...doc, fieldValues: { ...doc.fieldValues, ...profileToSvcValues(profile) } })
+        })
+        .catch(() => setInitialDoc(createInitialDocument(schema)))
+    }
+  }, [])
+
+  const resolveConflict = (useProfile: boolean) => {
+    if (!pendingConflict) return
+    const { doc, profileValues } = pendingConflict
+    setInitialDoc(useProfile
+      ? { ...doc, fieldValues: { ...doc.fieldValues, ...profileValues } }
+      : doc,
+    )
+    setPendingConflict(null)
+  }
 
   if (!schema) {
     return (
       <SafeAreaView style={s.safe}>
         <Text style={s.errorText}>Schema not found.</Text>
+      </SafeAreaView>
+    )
+  }
+
+  // Profile conflict prompt
+  if (pendingConflict) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <Modal visible transparent animationType="fade" statusBarTranslucent>
+          <View style={s.conflictOverlay}>
+            <View style={s.conflictCard}>
+              <Text style={s.conflictTitle}>Company Info</Text>
+              <Text style={s.conflictMessage}>
+                This file has different company info than your saved settings. Which would you like to use?
+              </Text>
+              <TouchableOpacity style={s.conflictBtnPrimary} onPress={() => resolveConflict(true)}>
+                <Text style={s.conflictBtnPrimaryText}>Use My Settings</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.conflictBtnSecondary} onPress={() => resolveConflict(false)}>
+                <Text style={s.conflictBtnSecondaryText}>Keep File Data</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     )
   }
@@ -493,5 +557,56 @@ const s = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: '#FFF',
+  },
+
+  // Company info conflict modal
+  conflictOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  conflictCard: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: Radii.xl,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+  },
+  conflictTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  conflictMessage: {
+    fontSize: FontSize.md,
+    color: Colors.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  conflictBtnPrimary: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radii.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  conflictBtnPrimaryText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: '#FFF',
+  },
+  conflictBtnSecondary: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  conflictBtnSecondaryText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    color: Colors.secondary,
   },
 })
