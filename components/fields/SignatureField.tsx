@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -171,7 +172,7 @@ export default function SignatureField({ label, required, value, onChange }: Pro
               style={s.modalClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={s.modalCloseText}>✕</Text>
+              <Feather name="x" size={20} color={Colors.secondary} />
             </TouchableOpacity>
             <Text style={s.modalTitle}>Sign Here</Text>
             <View style={{ width: 32 }} />
@@ -264,11 +265,6 @@ const s = StyleSheet.create({
     height: 32,
     alignItems: "center",
     justifyContent: "center",
-  },
-  modalCloseText: {
-    fontSize: FontSize.xl,
-    color: Colors.secondary,
-    fontWeight: FontWeight.semibold,
   },
   modalTitle: {
     flex: 1,

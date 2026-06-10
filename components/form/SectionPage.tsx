@@ -1,20 +1,40 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { Divider } from '../primitives'
+import { NoteField } from '../fields'
 import { DeviceList } from '../device'
 import LegendTable from './LegendTable'
 import ItemList from './ItemList'
-import type { FieldDefinition, SectionDefinition, SubsectionDefinition, InspectionSchema } from '../../schema/types'
+import type { FieldDefinition, NoteEntry, SectionDefinition, SubsectionDefinition, InspectionSchema } from '../../schema/types'
 import type { FormPage } from '../../screens/InspectionScreen'
 import type { DeviceLegendEntry } from '../../constants/legend'
 import FormField from './FormField'
+import { useInspection } from '../../context/InspectionContext'
 
 // ─── Field group ─────────────────────────────────────────────────────────────
 
+function fieldMeetsCondition(field: FieldDefinition, fieldValues: Record<string, string>, groupKey: string): boolean {
+  const cond = field.conditional_on
+  if (!cond) return true
+  const depVal = fieldValues[`${groupKey}/${cond.field}`] ?? ''
+  if (cond.value !== undefined) return depVal === cond.value
+  if (cond.contains !== undefined) return depVal.includes(cond.contains)
+  if (cond.contains_any !== undefined) {
+    let arr: string[] = []
+    try { arr = JSON.parse(depVal) } catch { arr = depVal ? [depVal] : [] }
+    return cond.contains_any.some(v => arr.includes(v))
+  }
+  if (cond.value_in !== undefined) return cond.value_in.includes(depVal)
+  return true
+}
+
 function FieldGroup({ fields, groupKey }: { fields: FieldDefinition[]; groupKey: string }) {
+  const { doc } = useInspection()
+  const visible = fields.filter(f => fieldMeetsCondition(f, doc.fieldValues, groupKey))
+
   return (
     <View>
-      {fields.map((field, i) => (
+      {visible.map((field, i) => (
         <View key={field.id}>
           {field.group_label ? (
             <View style={s.groupLabelRow}>
@@ -24,6 +44,11 @@ function FieldGroup({ fields, groupKey }: { fields: FieldDefinition[]; groupKey:
             <Divider />
           ) : null}
           <FormField field={field} groupKey={groupKey} />
+          {field.notes && field.notes.length > 0 && (
+            <View style={s.fieldNotes}>
+              <Notes notes={field.notes} />
+            </View>
+          )}
         </View>
       ))}
     </View>
@@ -63,28 +88,59 @@ interface ContentProps {
   groupKey: string
   legend: DeviceLegendEntry[]
   onLegendChange: (legend: DeviceLegendEntry[]) => void
+  prefixNotesBefore?: NoteEntry[]
+  prefixNotesAfter?: NoteEntry[]
 }
 
-function SectionContent({ target, groupKey, legend, onLegendChange }: ContentProps) {
+function Notes({ notes }: { notes: NoteEntry[] }) {
+  return (
+    <>
+      {notes.map((n, i) => (
+        <View key={i}>
+          {n.group_label && (
+            <View style={s.groupLabelRow}>
+              <Text style={s.groupLabelText}>{n.group_label}</Text>
+            </View>
+          )}
+          <NoteField text={n.label} />
+        </View>
+      ))}
+    </>
+  )
+}
+
+function SectionContent({ target, groupKey, legend, onLegendChange, prefixNotesBefore = [], prefixNotesAfter = [] }: ContentProps) {
   const isDeviceRecord = target.id === 's23_2'
   const isLegend = target.id === 's23_1'
+  const notesBefore = [...prefixNotesBefore, ...(target.notes_before ?? [])]
+  const notesAfter = [...(target.notes_after ?? []), ...prefixNotesAfter]
 
   if (isLegend) {
     return <LegendTable legend={legend} onLegendChange={onLegendChange} />
   }
 
   if (target.type === 'repeatable_list') {
-    return isDeviceRecord
-      ? <DeviceList groupKey={groupKey} targetId={target.id} legend={legend} />
-      : target.item_fields
-        ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} />
-        : null
+    return (
+      <View>
+        {notesBefore.length > 0 && <Notes notes={notesBefore} />}
+        {isDeviceRecord
+          ? <DeviceList groupKey={groupKey} targetId={target.id} legend={legend} />
+          : target.item_fields
+            ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} />
+            : null
+        }
+        {notesAfter.length > 0 && <View style={s.notesAfter}><Notes notes={notesAfter} /></View>}
+      </View>
+    )
   }
 
-  if (target.fields && target.fields.length > 0) {
+  const hasFields = target.fields && target.fields.length > 0
+  if (notesBefore.length > 0 || notesAfter.length > 0 || hasFields) {
     return (
       <View style={s.card}>
-        <FieldGroup fields={target.fields} groupKey={groupKey} />
+        {notesBefore.length > 0 && <Notes notes={notesBefore} />}
+        {hasFields && <FieldGroup fields={target.fields!} groupKey={groupKey} />}
+        {notesAfter.length > 0 && <Notes notes={notesAfter} />}
       </View>
     )
   }
@@ -113,8 +169,42 @@ export default function SectionPage({ page, schema, legend, onLegendChange, onTo
     ? (target as SubsectionDefinition).applicable_toggle?.label
     : section.applicable_toggle?.label
 
+  // Section-level notes appear on the first subsection's page
+  const isFirstSubsection = page.subsectionId && section.subsections?.[0]?.id === page.subsectionId
+  const prefixNotesBefore = isFirstSubsection ? (section.notes_before ?? []) : []
+  const prefixNotesAfter = isFirstSubsection ? (section.notes_after ?? []) : []
+
+  const applicableToggle = page.subsectionId
+    ? (target as SubsectionDefinition).applicable_toggle
+    : section.applicable_toggle
+  const greyOut = applicableToggle?.grey_out === true
+
+  const subsectionHeading = page.isRepeatable && page.subsectionId
+    ? { clause: (target as SubsectionDefinition).clause, title: target.title }
+    : null
+
+  const content = (
+    <SectionContent
+      target={target}
+      groupKey={page.groupKey}
+      legend={legend}
+      onLegendChange={onLegendChange}
+      prefixNotesBefore={prefixNotesBefore}
+      prefixNotesAfter={prefixNotesAfter}
+    />
+  )
+
   return (
     <View style={s.root}>
+      {subsectionHeading && (
+        <View style={s.subsectionHeading}>
+          {subsectionHeading.clause && (
+            <Text style={s.subsectionClause}>§{subsectionHeading.clause}</Text>
+          )}
+          <Text style={s.subsectionTitle}>{subsectionHeading.title}</Text>
+        </View>
+      )}
+
       {page.isOptional && toggleLabel && (
         <ApplicableBanner
           label={toggleLabel}
@@ -123,16 +213,15 @@ export default function SectionPage({ page, schema, legend, onLegendChange, onTo
         />
       )}
 
-      {page.isApplicable && (
-        <SectionContent
-          target={target}
-          groupKey={page.groupKey}
-          legend={legend}
-          onLegendChange={onLegendChange}
-        />
+      {page.isApplicable && content}
+
+      {!page.isApplicable && greyOut && (
+        <View style={s.greyedOut} pointerEvents="none">
+          {content}
+        </View>
       )}
 
-      {!page.isApplicable && (
+      {!page.isApplicable && !greyOut && (
         <View style={s.naCard}>
           <Text style={s.naText}>Marked as not applicable — tap above to re-enable.</Text>
         </View>
@@ -143,6 +232,30 @@ export default function SectionPage({ page, schema, legend, onLegendChange, onTo
 
 const s = StyleSheet.create({
   root: { gap: Spacing.lg },
+  notesAfter: { marginTop: Spacing.lg },
+  greyedOut: { opacity: 0.35 },
+  fieldNotes: { marginTop: Spacing.sm },
+
+  subsectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  subsectionClause: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.bold,
+    color: Colors.accent,
+    backgroundColor: Colors.accentSoft,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: Radii.sm,
+    overflow: 'hidden',
+  },
+  subsectionTitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    color: Colors.primary,
+  },
 
   card: {
     backgroundColor: Colors.surface,

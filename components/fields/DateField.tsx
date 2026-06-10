@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Platform } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
 import { FieldLabel } from "../primitives";
@@ -13,10 +14,9 @@ interface Props {
 
 function toDate(val: string): Date {
   if (val) {
-    const parts = val.split("/");
+    const parts = val.split("-");
     if (parts.length === 3) {
-      const year = parseInt(parts[2].length === 2 ? "20" + parts[2] : parts[2]);
-      const d = new Date(year, parseInt(parts[0]) - 1, parseInt(parts[1]));
+      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
       if (!isNaN(d.getTime())) return d;
     }
   }
@@ -24,10 +24,10 @@ function toDate(val: string): Date {
 }
 
 function toDisplay(d: Date): string {
+  const yyyy = String(d.getFullYear());
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(2);
-  return `${mm}/${dd}/${yy}`;
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export default function DateField({ label, required, value, onChange }: Props) {
@@ -49,8 +49,8 @@ export default function DateField({ label, required, value, onChange }: Props) {
       <View style={s.container}>
         <FieldLabel label={label} required={required} />
         <TouchableOpacity style={s.input} onPress={() => setShowPicker(true)}>
-          <Text style={val ? s.inputText : s.placeholder}>{val || "MM/DD/YY"}</Text>
-          <Text style={s.calIcon}>📅</Text>
+          <Text style={val ? s.inputText : s.placeholder}>{val || "YYYY-MM-DD"}</Text>
+          <Feather name="calendar" size={16} color={Colors.secondary} />
         </TouchableOpacity>
         {showPicker && (
           <DateTimePicker
@@ -83,8 +83,8 @@ export default function DateField({ label, required, value, onChange }: Props) {
     <View style={s.container}>
       <FieldLabel label={label} required={required} />
       <TouchableOpacity style={s.input} onPress={handleOpen}>
-        <Text style={val ? s.inputText : s.placeholder}>{val || "MM/DD/YY"}</Text>
-        <Text style={s.calIcon}>📅</Text>
+        <Text style={val ? s.inputText : s.placeholder}>{val || "YYYY-MM-DD"}</Text>
+        <Feather name="calendar" size={16} color={Colors.secondary} />
       </TouchableOpacity>
 
       <Modal visible={showPicker} transparent animationType="slide">
@@ -128,7 +128,6 @@ const s = StyleSheet.create({
   },
   inputText: { flex: 1, fontSize: FontSize.lg, color: Colors.primary },
   placeholder: { flex: 1, fontSize: FontSize.lg, color: Colors.secondary },
-  calIcon: { fontSize: 18 },
   overlay: {
     flex: 1,
     justifyContent: "flex-end",

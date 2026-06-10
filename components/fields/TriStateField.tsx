@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
+import { parseMarkup } from "../primitives/RichText";
 
 export type TriStateVal = "pass" | "fail" | "na" | null;
 
@@ -36,6 +37,9 @@ export default function TriStateField({
     else setInternal(v);
   };
 
+  const segs = parseMarkup(label)
+  const labelIsPlain = segs.every(sg => !sg.bold && !sg.italic && !sg.underline)
+
   return (
     <TouchableOpacity
       style={[s.row, focused && s.rowFocused]}
@@ -43,7 +47,14 @@ export default function TriStateField({
       activeOpacity={onFocus ? 0.7 : 1}
     >
       <Text style={s.label}>
-        {label}
+        {labelIsPlain
+          ? label
+          : segs.map((sg, i) => (
+              <Text key={i} style={[sg.bold && s.bold, sg.italic && s.italic, sg.underline && s.underline]}>
+                {sg.text}
+              </Text>
+            ))
+        }
         {required && <Text style={s.star}> *</Text>}
       </Text>
       <View style={s.buttons}>
@@ -95,6 +106,9 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
   star: { color: Colors.accent },
+  bold: { fontWeight: "bold" as const },
+  italic: { fontStyle: "italic" as const },
+  underline: { textDecorationLine: "underline" as const },
   buttons: { flexDirection: "row", gap: 6 },
   btn: {
     width: 40,

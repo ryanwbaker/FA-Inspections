@@ -1,4 +1,6 @@
 export type FieldType =
+  | 'note'
+  | 'label'
   | 'string'
   | 'textarea'
   | 'integer'
@@ -15,7 +17,7 @@ export type FieldType =
   | 'dropdown'
   | 'signature'
 
-export type SectionType = 'repeatable_section' | 'repeatable_list'
+export type SectionType = 'repeatable_section' | 'repeatable_list' | 'repeatable_subsection'
 
 export interface ConditionalOn {
   field: string
@@ -36,6 +38,15 @@ export interface FieldDefinition {
   auto_increment?: boolean
   source?: string
   group_label?: string     // visual group header rendered before this field within its card
+  default?: string         // pre-populated value on new inspection creation
+  computed?: string        // computation key; field is read-only and resolved by the app/PDF generator
+  source_default?: string  // fieldValues key to copy as the initial value when creating a new list item
+  notes?: NoteEntry[]      // explanatory notes rendered below the field
+}
+
+export interface NoteEntry {
+  label: string
+  group_label?: string
 }
 
 export interface ApplicableToggle {
@@ -43,6 +54,7 @@ export interface ApplicableToggle {
   label: string
   type: 'boolean'
   default: boolean
+  grey_out?: boolean  // render content greyed-out when N/A instead of hiding it
 }
 
 export interface SubsectionDefinition {
@@ -51,10 +63,13 @@ export interface SubsectionDefinition {
   type?: SectionType
   fields?: FieldDefinition[]
   item_fields?: FieldDefinition[]
+  notes_before?: NoteEntry[]
+  notes_after?: NoteEntry[]
   mobile_note?: string
   applicable_toggle?: ApplicableToggle
   clause?: string
   reference?: string
+  info_text?: string
 }
 
 export interface SectionDefinition {
@@ -65,11 +80,14 @@ export interface SectionDefinition {
   fields?: FieldDefinition[]
   subsections?: SubsectionDefinition[]
   item_fields?: FieldDefinition[]
+  notes_before?: NoteEntry[]
+  notes_after?: NoteEntry[]
   instance_label?: string
   applicable_toggle?: ApplicableToggle
   mobile_note?: string
   clause?: string
   reference?: string
+  info_text?: string
 }
 
 export interface InspectionSchema {

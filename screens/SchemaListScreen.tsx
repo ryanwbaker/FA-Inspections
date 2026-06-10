@@ -1,69 +1,85 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { useFocusEffect } from '@react-navigation/native'
-import { Colors, FontSize, FontWeight, Spacing, Radii } from '../tokens'
-import { listSchemas } from '../schema'
-import type { SchemaListScreenProps } from '../navigation/types'
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
+import { listSchemas } from "../schema";
+import type { SchemaListScreenProps } from "../navigation/types";
 import {
-  listInspections, deleteInspection, importInspection,
+  listInspections,
+  deleteInspection,
+  importInspection,
   type InspectionMeta,
-} from '../services/inspectionFiles'
-import { ConfirmModal } from '../components/primitives'
+} from "../services/inspectionFiles";
+import { ConfirmModal } from "../components/primitives";
+import { Feather } from "@expo/vector-icons";
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  const diffDays = Math.floor((Date.now() - d.getTime()) / 86_400_000)
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+  const d = new Date(iso);
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86_400_000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return d.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 }
 
-export default function SchemaListScreen({ navigation }: SchemaListScreenProps) {
-  const schemas = listSchemas()
+export default function SchemaListScreen({
+  navigation,
+}: SchemaListScreenProps) {
+  const schemas = listSchemas();
 
-  const [saved, setSaved] = useState<InspectionMeta[]>([])
-  const [loadingSaved, setLoadingSaved] = useState(true)
-  const [deleteTarget, setDeleteTarget] = useState<InspectionMeta | null>(null)
-  const [importing, setImporting] = useState(false)
-  const [importError, setImportError] = useState<string | null>(null)
+  const [saved, setSaved] = useState<InspectionMeta[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<InspectionMeta | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Refresh the saved list whenever this screen is focused
   useFocusEffect(
     useCallback(() => {
-      setLoadingSaved(true)
+      setLoadingSaved(true);
       listInspections()
         .then(setSaved)
         .catch(() => setSaved([]))
-        .finally(() => setLoadingSaved(false))
+        .finally(() => setLoadingSaved(false));
     }, []),
-  )
+  );
 
   const handleDelete = async () => {
-    if (!deleteTarget) return
-    await deleteInspection(deleteTarget.filePath).catch(() => {})
-    setSaved(prev => prev.filter(i => i.filePath !== deleteTarget.filePath))
-    setDeleteTarget(null)
-  }
+    if (!deleteTarget) return;
+    await deleteInspection(deleteTarget.filePath).catch(() => {});
+    setSaved((prev) =>
+      prev.filter((i) => i.filePath !== deleteTarget.filePath),
+    );
+    setDeleteTarget(null);
+  };
 
   const handleImport = async () => {
-    setImportError(null)
-    setImporting(true)
+    setImportError(null);
+    setImporting(true);
     try {
-      const doc = await importInspection()
+      const doc = await importInspection();
       if (doc) {
-        navigation.navigate('Inspection', { schemaId: doc.schemaId, loadFilePath: doc.filePath! })
+        navigation.navigate("Inspection", {
+          schemaId: doc.schemaId,
+          loadFilePath: doc.filePath!,
+        });
       }
     } catch {
-      setImportError('Could not open the file. Make sure it is a valid inspection file.')
+      setImportError(
+        "Could not open the file. Make sure it is a valid inspection file.",
+      );
     } finally {
-      setImporting(false)
+      setImporting(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -75,15 +91,17 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
         </View>
         <TouchableOpacity
           style={s.settingsBtn}
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() => navigation.navigate("Settings")}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={s.settingsIcon}>⚙</Text>
+          <Feather name="settings" size={22} color={Colors.secondary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-
+      <ScrollView
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* ── Saved inspections ──────────────────────────────────────── */}
         <Text style={s.sectionLabel}>Saved</Text>
 
@@ -95,23 +113,37 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
           </View>
         ) : (
           <View style={s.savedList}>
-            {saved.map(item => (
+            {saved.map((item) => (
               <TouchableOpacity
                 key={item.filePath}
                 style={s.savedRow}
-                onPress={() => navigation.navigate('Inspection', {
-                  schemaId: item.schemaId,
-                  loadFilePath: item.filePath,
-                })}
+                onPress={() =>
+                  navigation.navigate("Inspection", {
+                    schemaId: item.schemaId,
+                    loadFilePath: item.filePath,
+                  })
+                }
                 activeOpacity={0.7}
               >
                 <View style={s.savedInfo}>
-                  <Text style={s.savedName} numberOfLines={1}>{item.filename}</Text>
+                  <Text style={s.savedName} numberOfLines={1}>
+                    {item.filename}
+                  </Text>
                   <Text style={s.savedDate}>{formatDate(item.updatedAt)}</Text>
                 </View>
-                <View style={[s.statusBadge, item.status === 'signed' && s.statusBadgeSigned]}>
-                  <Text style={[s.statusText, item.status === 'signed' && s.statusTextSigned]}>
-                    {item.status === 'signed' ? 'Signed' : 'Draft'}
+                <View
+                  style={[
+                    s.statusBadge,
+                    item.status === "signed" && s.statusBadgeSigned,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      s.statusText,
+                      item.status === "signed" && s.statusTextSigned,
+                    ]}
+                  >
+                    {item.status === "signed" ? "Signed" : "Draft"}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -119,7 +151,7 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
                   onPress={() => setDeleteTarget(item)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text style={s.deleteBtnText}>🗑</Text>
+                  <Feather name="trash-2" size={16} color={Colors.fail} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
@@ -129,21 +161,27 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
         {/* ── New inspection ─────────────────────────────────────────── */}
         <Text style={[s.sectionLabel, { marginTop: Spacing.xl }]}>New</Text>
 
-        {schemas.map(schema => (
+        {schemas.map((schema) => (
           <TouchableOpacity
             key={schema.id}
             style={s.schemaCard}
-            onPress={() => navigation.navigate('Inspection', { schemaId: schema.id })}
+            onPress={() =>
+              navigation.navigate("Inspection", { schemaId: schema.id })
+            }
             activeOpacity={0.8}
           >
             <View style={s.schemaCardTop}>
               <View style={s.versionBadge}>
                 <Text style={s.versionText}>{schema.version}</Text>
               </View>
-              <Text style={s.sectionCount}>{schema.sections.length} sections</Text>
+              <Text style={s.sectionCount}>
+                {schema.sections.length} sections
+              </Text>
             </View>
             <Text style={s.schemaTitle}>{schema.title}</Text>
-            <Text style={s.schemaDesc} numberOfLines={2}>{schema.description}</Text>
+            <Text style={s.schemaDesc} numberOfLines={2}>
+              {schema.description}
+            </Text>
             <View style={s.startRow}>
               <Text style={s.startText}>Start Inspection →</Text>
             </View>
@@ -162,7 +200,7 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
           {importing ? (
             <ActivityIndicator size="small" color={Colors.accent} />
           ) : (
-            <Text style={s.importBtnText}>Import from Files App…</Text>
+            <Text style={s.importBtnText}>Import from Files…</Text>
           )}
         </TouchableOpacity>
 
@@ -172,14 +210,18 @@ export default function SchemaListScreen({ navigation }: SchemaListScreenProps) 
       <ConfirmModal
         visible={!!deleteTarget}
         title="Delete Inspection"
-        message={deleteTarget ? `Delete "${deleteTarget.filename}"? This cannot be undone.` : undefined}
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.filename}"? This cannot be undone.`
+            : undefined
+        }
         confirmLabel="Delete"
         destructive
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />
     </SafeAreaView>
-  )
+  );
 }
 
 const s = StyleSheet.create({
@@ -187,9 +229,9 @@ const s = StyleSheet.create({
   content: { padding: Spacing.lg, paddingBottom: Spacing.xxl },
 
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     backgroundColor: Colors.bg,
@@ -207,19 +249,15 @@ const s = StyleSheet.create({
   settingsBtn: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsIcon: {
-    fontSize: 22,
-    color: Colors.secondary,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sectionLabel: {
     fontSize: FontSize.xs,
     fontWeight: FontWeight.bold,
     color: Colors.secondary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: Spacing.sm,
   },
@@ -232,7 +270,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     padding: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: { fontSize: FontSize.md, color: Colors.secondary },
   savedList: {
@@ -240,11 +278,11 @@ const s = StyleSheet.create({
     borderRadius: Radii.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   savedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     gap: Spacing.md,
@@ -284,11 +322,10 @@ const s = StyleSheet.create({
   deleteBtn: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
-  deleteBtnText: { fontSize: 15 },
 
   // Schema cards
   schemaCard: {
@@ -301,9 +338,9 @@ const s = StyleSheet.create({
     gap: Spacing.sm,
   },
   schemaCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: Spacing.xs,
   },
   versionBadge: {
@@ -351,10 +388,10 @@ const s = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: Radii.lg,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     paddingVertical: Spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 48,
   },
   importBtnDisabled: { opacity: 0.5 },
@@ -365,8 +402,8 @@ const s = StyleSheet.create({
   importError: {
     fontSize: FontSize.sm,
     color: Colors.fail,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: Spacing.md,
     lineHeight: 18,
   },
-})
+});

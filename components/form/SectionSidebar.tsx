@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   Animated, Pressable, StyleSheet, Dimensions,
 } from 'react-native'
+import { Feather } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import type { InspectionSchema } from '../../schema/types'
@@ -41,6 +42,7 @@ interface GroupHeaderItem {
 interface SectionContainerItem {
   kind: 'section-container'
   sectionId: string
+  repeatableGroupId: string  // passed to onAddGroup; = subsectionId for repeatable_subsection
   label: string
 }
 
@@ -48,6 +50,8 @@ interface PageItem {
   kind: 'page'
   page: FormPage
   indented: boolean
+  showAdd?: boolean
+  addGroupId?: string
 }
 
 type DisplayItem = GroupHeaderItem | SectionContainerItem | PageItem
@@ -122,17 +126,31 @@ export default function SectionSidebar({
         groupPages.forEach(p => items.push({ kind: 'page', page: p, indented: true }))
       }
     } else {
-      // Single-page repeatable: emit a section container header the first time we see this sectionId
-      if (!sectionsWithContainer.has(page.sectionId)) {
-        sectionsWithContainer.add(page.sectionId)
-        items.push({
-          kind: 'section-container',
-          sectionId: page.sectionId,
-          label: section.instance_label ?? section.title,
-        })
-      }
-      if (!collapsedKeys.has(page.sectionId)) {
-        items.push({ kind: 'page', page, indented: true })
+      // Single-page repeatable
+      const containerKey = page.repeatableGroupId ?? page.sectionId
+      const isSubRepeatable = !!page.repeatableGroupId && page.repeatableGroupId === page.subsectionId
+
+      if (isSubRepeatable) {
+        // No collapsible container — emit rows directly
+        const subGroupId = page.repeatableGroupId!
+        const allSubGroupKeys = [...new Set(pages.filter(p => p.repeatableGroupId === subGroupId).map(p => p.groupKey))]
+        const isLast = allSubGroupKeys.at(-1) === page.groupKey
+        items.push({ kind: 'page', page, indented: false, showAdd: isLast, addGroupId: subGroupId })
+      } else {
+        // Standard single-page repeatable: emit a section container header the first time
+        const containerLabel = section.instance_label ?? section.title
+        if (!sectionsWithContainer.has(containerKey)) {
+          sectionsWithContainer.add(containerKey)
+          items.push({
+            kind: 'section-container',
+            sectionId: page.sectionId,
+            repeatableGroupId: containerKey,
+            label: containerLabel,
+          })
+        }
+        if (!collapsedKeys.has(containerKey)) {
+          items.push({ kind: 'page', page, indented: true })
+        }
       }
     }
 
@@ -153,7 +171,7 @@ export default function SectionSidebar({
         <View style={[s.drawerHeader, { paddingTop: insets.top + Spacing.md }]}>
           <Text style={s.drawerTitle}>Sections</Text>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={s.closeText}>✕</Text>
+            <Feather name="x" size={20} color={Colors.secondary} />
           </TouchableOpacity>
         </View>
 
@@ -190,7 +208,7 @@ export default function SectionSidebar({
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       style={s.removeIconBtn}
                     >
-                      <Text style={s.removeIcon}>🗑</Text>
+                      <Feather name="trash-2" size={15} color={Colors.fail} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -199,11 +217,11 @@ export default function SectionSidebar({
 
             // ── Single-page repeatable container header ──────────────────────
             if (item.kind === 'section-container') {
-              const collapsed = collapsedKeys.has(item.sectionId)
+              const collapsed = collapsedKeys.has(item.repeatableGroupId)
               return (
-                <View key={`sc-${item.sectionId}`} style={s.groupHeader}>
+                <View key={`sc-${item.repeatableGroupId}`} style={s.groupHeader}>
                   <TouchableOpacity
-                    onPress={() => toggleCollapse(item.sectionId)}
+                    onPress={() => toggleCollapse(item.repeatableGroupId)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={s.collapseBtn}
                   >
@@ -215,7 +233,7 @@ export default function SectionSidebar({
                   <Text style={s.groupHeaderLabel} numberOfLines={1}>{item.label}</Text>
 
                   <TouchableOpacity
-                    onPress={() => onAddGroup(item.sectionId)}
+                    onPress={() => onAddGroup(item.repeatableGroupId)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Text style={s.addInlineText}>+</Text>
@@ -229,13 +247,15 @@ export default function SectionSidebar({
             const isCurrent = page.key === currentPageKey
             const section = sectionMap[page.sectionId]
 
-            // For single-page repeatables shown under a container: compute instance info
+            // Compute instance info for repeatable rows
+            const groupFilterId = page.repeatableGroupId ?? page.sectionId
             const allGroups = page.isRepeatable
-              ? [...new Set(pages.filter(p => p.sectionId === page.sectionId).map(p => p.groupKey))]
+              ? [...new Set(pages.filter(p => (p.repeatableGroupId ?? p.sectionId) === groupFilterId).map(p => p.groupKey))]
               : []
             const instanceNumber = page.isRepeatable ? allGroups.indexOf(page.groupKey) + 1 : 0
-            const isSingleRepeatable = page.isRepeatable && !indented  // indented=false means multi-page already handled above; single-page container pages are indented=true
-            const canRemove = page.isRepeatable && indented && allGroups.length > 1 && !items.some(it => it.kind === 'group-header' && it.groupKey === page.groupKey)
+            const isSubRepeatable = !!page.repeatableGroupId && page.repeatableGroupId === page.subsectionId
+            const isSingleRepeatable = page.isRepeatable && !indented && !isSubRepeatable
+            const canRemove = page.isRepeatable && (indented || isSubRepeatable) && allGroups.length > 1 && !items.some(it => it.kind === 'group-header' && it.groupKey === page.groupKey)
 
             return (
               <TouchableOpacity
@@ -255,7 +275,9 @@ export default function SectionSidebar({
                 <Text style={[s.rowLabel, isCurrent && s.rowLabelActive]} numberOfLines={2}>
                   {isSingleRepeatable
                     ? `${section.instance_label ?? section.title} ${instanceNumber}`
-                    : page.title}
+                    : isSubRepeatable
+                      ? (instanceNumber > 1 ? `${page.title} (${instanceNumber})` : page.title)
+                      : page.title}
                 </Text>
 
                 {page.isOptional && !page.isApplicable && (
@@ -264,12 +286,21 @@ export default function SectionSidebar({
                   </View>
                 )}
 
+                {item.showAdd && item.addGroupId && (
+                  <TouchableOpacity
+                    onPress={() => onAddGroup(item.addGroupId!)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={s.addInlineText}>+</Text>
+                  </TouchableOpacity>
+                )}
+
                 {canRemove && (
                   <TouchableOpacity
                     onPress={() => onRemoveGroup(page.groupKey)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={s.rowRemoveText}>✕</Text>
+                    <Feather name="trash-2" size={15} color={Colors.fail} />
                   </TouchableOpacity>
                 )}
               </TouchableOpacity>
@@ -352,8 +383,6 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.primary,
   },
-  closeText: { fontSize: FontSize.lg, color: Colors.secondary },
-
   list: { flex: 1 },
   listContent: { paddingVertical: Spacing.sm },
 
@@ -398,8 +427,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  removeIcon: { fontSize: 15 },
-
   // Page row
   row: {
     flexDirection: 'row',
@@ -445,8 +472,6 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.semibold,
     color: Colors.na,
   },
-  rowRemoveText: { fontSize: FontSize.sm, color: Colors.fail, fontWeight: FontWeight.semibold },
-
   // Footer
   footer: {
     paddingHorizontal: Spacing.lg,

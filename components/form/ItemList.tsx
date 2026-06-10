@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { Feather } from '@expo/vector-icons'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { ConfirmModal } from '../primitives'
 import ItemModal from './ItemModal'
@@ -63,7 +64,14 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
     : items.length + 1
 
   const openNew = () => {
-    setEditing({ item: makeBlankItem(itemFields, nextNum), isNew: true })
+    const item = makeBlankItem(itemFields, nextNum)
+    itemFields.forEach(f => {
+      if (f.source_default) {
+        const v = doc.fieldValues[f.source_default]
+        if (v) item.values[f.id] = v
+      }
+    })
+    setEditing({ item, isNew: true })
   }
 
   const openEdit = (item: Item) => {
@@ -112,7 +120,7 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
               onPress={() => setConfirmDeleteId(item.id)}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
-              <Text style={s.deleteBtnText}>✕</Text>
+              <Feather name="trash-2" size={15} color={Colors.fail} />
             </TouchableOpacity>
           </TouchableOpacity>
         )
@@ -203,11 +211,6 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     justifyContent: 'center',
-  },
-  deleteBtnText: {
-    fontSize: FontSize.sm,
-    color: Colors.fail,
-    fontWeight: FontWeight.semibold,
   },
   addBtn: {
     borderWidth: 1.5,

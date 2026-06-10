@@ -1,3 +1,4 @@
+export { default as NoteField } from "./NoteField";
 export { default as StringField } from "./StringField";
 export { default as NumberField } from "./NumberField";
 export { default as DateField } from "./DateField";

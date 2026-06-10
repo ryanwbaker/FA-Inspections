@@ -59,19 +59,15 @@ export async function pickAndSaveLogo(): Promise<string | null> {
 
 // ─── Helpers for InspectionScreen ────────────────────────────────────────────
 
-// The groupKey for the service company subsection (non-repeatable, index 0)
-export const SVC_GROUP_KEY = 's20_1__0'
+// s20_1 is a subsection of s20; makePages passes the parent section's groupKey down,
+// so all fields in s20_1 are stored under the s20 groupKey.
+export const SVC_GROUP_KEY = 's20__0'
 
 export function profileToSvcValues(profile: CompanyProfile): Record<string, string> {
   const g = SVC_GROUP_KEY
   return {
-    [`${g}/svc_company_name`]: profile.name,
-    [`${g}/svc_phone`]: profile.phone,
-    [`${g}/svc_address_1`]: profile.address1,
-    [`${g}/svc_address_2`]: profile.address2,
-    [`${g}/svc_city`]: profile.city,
-    [`${g}/svc_province`]: profile.province,
-    [`${g}/svc_postal_code`]: profile.postalCode,
+    [`${g}/primary_tech_company`]: profile.name,
+    [`${g}/primary_tech_phone`]: profile.phone,
   }
 }
 
@@ -83,6 +79,6 @@ export function fileSvcDiffersFromProfile(
   fieldValues: Record<string, string>,
   profile: CompanyProfile,
 ): boolean {
-  const fileName = fieldValues[`${SVC_GROUP_KEY}/svc_company_name`]?.trim() ?? ''
+  const fileName = fieldValues[`${SVC_GROUP_KEY}/primary_tech_company`]?.trim() ?? ''
   return fileName.length > 0 && fileName !== profile.name.trim()
 }

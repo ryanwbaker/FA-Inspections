@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from "react";
+import { Feather } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -172,7 +173,7 @@ export default function DeviceModal({
             style={s.closeBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={s.closeText}>✕</Text>
+            <Feather name="x" size={20} color={Colors.secondary} />
           </TouchableOpacity>
           <Text style={s.title}>Device Record</Text>
           <View style={s.nav}>
@@ -181,9 +182,7 @@ export default function DeviceModal({
               onPress={() => onNavigate(activeIndex - 1)}
               disabled={activeIndex === 0}
             >
-              <Text style={[s.navText, activeIndex === 0 && s.navTextDisabled]}>
-                ‹
-              </Text>
+              <Feather name="chevron-left" size={22} color={activeIndex === 0 ? Colors.secondary : Colors.primary} />
             </TouchableOpacity>
             <Text style={s.navCount}>
               {activeIndex + 1}/{total}
@@ -193,14 +192,7 @@ export default function DeviceModal({
               onPress={() => onNavigate(activeIndex + 1)}
               disabled={activeIndex === total - 1}
             >
-              <Text
-                style={[
-                  s.navText,
-                  activeIndex === total - 1 && s.navTextDisabled,
-                ]}
-              >
-                ›
-              </Text>
+              <Feather name="chevron-right" size={22} color={activeIndex === total - 1 ? Colors.secondary : Colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -352,11 +344,6 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeText: {
-    fontSize: FontSize.xl,
-    color: Colors.secondary,
-    fontWeight: FontWeight.semibold,
-  },
   title: {
     flex: 1,
     fontSize: FontSize.xl,
@@ -376,13 +363,6 @@ const s = StyleSheet.create({
     borderColor: Colors.border,
   },
   navBtnDisabled: { opacity: 0.35 },
-  navText: {
-    fontSize: 20,
-    color: Colors.primary,
-    fontWeight: FontWeight.semibold,
-    lineHeight: 24,
-  },
-  navTextDisabled: { color: Colors.secondary },
   navCount: {
     fontSize: FontSize.sm,
     color: Colors.secondary,

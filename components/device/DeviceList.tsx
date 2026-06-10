@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
 import DeviceModal, { DeviceRecord } from "./DeviceModal";
 import { ConfirmModal } from "../primitives";
@@ -127,7 +128,7 @@ export default function DeviceList({ legend, groupKey, targetId }: Props) {
             onPress={() => handleDelete(d.id)}
             hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
           >
-            <Text style={s.deleteBtnText}>✕</Text>
+            <Feather name="trash-2" size={15} color={Colors.fail} />
           </TouchableOpacity>
         </TouchableOpacity>
         )
@@ -217,11 +218,6 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     justifyContent: "center",
-  },
-  deleteBtnText: {
-    fontSize: FontSize.sm,
-    color: Colors.fail,
-    fontWeight: FontWeight.semibold,
   },
   addBtn: {
     borderWidth: 1.5,
