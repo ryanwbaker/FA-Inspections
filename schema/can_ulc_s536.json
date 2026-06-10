@@ -551,6 +551,14 @@
           "clause": "22.0",
           "title": "Control Unit or Transponder Inspection",
           "reference": "Clause 8.2",
+          "type": "repeatable_subsection",
+          "applicable_toggle": {
+            "id": "s22_0_applicable",
+            "label": "Control Unit or Transponder Inspection",
+            "type": "boolean",
+            "default": true,
+            "grey_out": true
+          },
           "fields": [
             {
               "id": "s22_0",
@@ -568,7 +576,11 @@
                   "label": "— = Not applicable — Function or feature not provided on this <i>fire alarm system</i>"
                 }
               ]
-            },
+            }]},
+            {"id": "s22_1",
+          "clause": "22.1",
+          "title": "Control Unit or Transponder Inspection Record",
+          "fields": [
             {
               "id": "cu_field_location",
               "label": "Field Location",
