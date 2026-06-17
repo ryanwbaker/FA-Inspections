@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
-import { listSchemas, getSchema } from "../schema";
-import type { InspectionSchema } from "../schema";
+import { listSchemas, getSchema } from "../form_schema";
+import type { InspectionSchema } from "../form_schema";
 import type { SchemaListScreenProps } from "../navigation/types";
 import {
   listInspections,

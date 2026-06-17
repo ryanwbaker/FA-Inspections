@@ -100,16 +100,12 @@ export default function SignatureField({ label, required, value, onChange }: Pro
 
   const openModal = async () => {
     await ScreenOrientation.unlockAsync();
-    await ScreenOrientation.lockAsync(
-      ScreenOrientation.OrientationLock.LANDSCAPE,
-    );
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
     setModalVisible(true);
   };
 
   const closeModal = async () => {
-    await ScreenOrientation.lockAsync(
-      ScreenOrientation.OrientationLock.PORTRAIT_UP,
-    );
+    await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     setModalVisible(false);
   };
 
@@ -159,11 +155,7 @@ export default function SignatureField({ label, required, value, onChange }: Pro
       <Modal
         visible={modalVisible}
         animationType="slide"
-        supportedOrientations={[
-          "landscape",
-          "landscape-left",
-          "landscape-right",
-        ]}
+        supportedOrientations={["landscape", "landscape-left", "landscape-right"]}
       >
         <SafeAreaView style={s.modalSafe}>
           <View style={s.modalHeader}>

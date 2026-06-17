@@ -1,5 +1,4 @@
 import type { DeviceLegendEntry } from '../constants/legend'
-import type { DeviceRecord } from '../components/device/DeviceModal'
 
 export interface StoredListItem {
   id: string
@@ -24,13 +23,9 @@ export interface InspectionDocument {
   // Key: `${groupKey}/${fieldId}`
   fieldValues: Record<string, string>
 
-  // Repeatable list items (ItemList sections)
+  // Repeatable list items — covers repeatable_list and device_record_list sections
   // Key: `${groupKey}/${targetId}`
   listItems: Record<string, StoredListItem[]>
-
-  // Device records (§23.2)
-  // Key: `${groupKey}/${targetId}`
-  deviceRecords: Record<string, DeviceRecord[]>
 
   // Legend (§23.1) — per-inspection, technician adds system-specific hardware
   legend: DeviceLegendEntry[]
@@ -39,7 +34,6 @@ export interface InspectionDocument {
 export type InspectionAction =
   | { type: 'SET_FIELD'; key: string; value: string }
   | { type: 'SET_LIST_ITEMS'; key: string; items: StoredListItem[] }
-  | { type: 'SET_DEVICE_RECORDS'; key: string; records: DeviceRecord[] }
   | { type: 'SET_LEGEND'; legend: DeviceLegendEntry[] }
   | { type: 'SET_APPLICABLE'; pageKey: string; value: boolean }
   | { type: 'ADD_GROUP'; sectionId: string; groupKey: string }

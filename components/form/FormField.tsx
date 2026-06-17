@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import type { FieldDefinition } from '../../schema/types'
+import type { FieldDefinition } from '../../form_schema/types'
 import type { TriStateVal } from '../fields/TriStateField'
 import {
   NoteField, StringField, NumberField, DateField, BooleanYNField,
@@ -125,6 +125,7 @@ export default function FormField({ field, groupKey }: Props) {
           label={field.label}
           required={required}
           options={field.options ?? []}
+          optionLabels={field.optionLabels}
           value={raw || null}
           onChange={set}
         />

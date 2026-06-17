@@ -2,31 +2,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { Divider } from '../primitives'
 import { NoteField } from '../fields'
-import { DeviceList } from '../device'
 import LegendTable from './LegendTable'
 import ItemList from './ItemList'
-import type { FieldDefinition, NoteEntry, SectionDefinition, SubsectionDefinition, InspectionSchema } from '../../schema/types'
+import type { FieldDefinition, NoteEntry, SectionDefinition, SubsectionDefinition, InspectionSchema } from '../../form_schema/types'
 import type { FormPage } from '../../screens/InspectionScreen'
 import type { DeviceLegendEntry } from '../../constants/legend'
 import FormField from './FormField'
 import { useInspection } from '../../context/InspectionContext'
-
-// ─── Field group ─────────────────────────────────────────────────────────────
-
-function fieldMeetsCondition(field: FieldDefinition, fieldValues: Record<string, string>, groupKey: string): boolean {
-  const cond = field.conditional_on
-  if (!cond) return true
-  const depVal = fieldValues[`${groupKey}/${cond.field}`] ?? ''
-  if (cond.value !== undefined) return depVal === cond.value
-  if (cond.contains !== undefined) return depVal.includes(cond.contains)
-  if (cond.contains_any !== undefined) {
-    let arr: string[] = []
-    try { arr = JSON.parse(depVal) } catch { arr = depVal ? [depVal] : [] }
-    return cond.contains_any.some(v => arr.includes(v))
-  }
-  if (cond.value_in !== undefined) return cond.value_in.includes(depVal)
-  return true
-}
+import { fieldMeetsCondition } from '../../services/formPages'
 
 function FieldGroup({ fields, groupKey }: { fields: FieldDefinition[]; groupKey: string }) {
   const { doc } = useInspection()
@@ -110,24 +93,20 @@ function Notes({ notes }: { notes: NoteEntry[] }) {
 }
 
 function SectionContent({ target, groupKey, legend, onLegendChange, prefixNotesBefore = [], prefixNotesAfter = [] }: ContentProps) {
-  const isDeviceRecord = target.type === 'device_record_list'
-  const isLegend = target.type === 'device_legend'
   const notesBefore = [...prefixNotesBefore, ...(target.notes_before ?? [])]
   const notesAfter = [...(target.notes_after ?? []), ...prefixNotesAfter]
 
-  if (isLegend) {
+  if (target.type === 'device_legend') {
     return <LegendTable legend={legend} onLegendChange={onLegendChange} />
   }
 
-  if (target.type === 'repeatable_list' || isDeviceRecord) {
+  if (target.type === 'repeatable_list' || target.type === 'device_record_list') {
     return (
       <View>
         {notesBefore.length > 0 && <Notes notes={notesBefore} />}
-        {isDeviceRecord
-          ? <DeviceList groupKey={groupKey} targetId={target.id} legend={legend} />
-          : target.item_fields
-            ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} />
-            : null
+        {target.item_fields
+          ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} />
+          : null
         }
         {notesAfter.length > 0 && <View style={s.notesAfter}><Notes notes={notesAfter} /></View>}
       </View>

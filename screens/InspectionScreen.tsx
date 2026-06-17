@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
-import { getSchema } from "../schema";
-import type { InspectionSchema } from "../schema/types";
+import { getSchema } from "../form_schema";
+import type { InspectionSchema } from "../form_schema/types";
 import {
   SectionPage,
   PaginationStepper,
@@ -42,101 +42,13 @@ import {
 import { loadTechProfile } from "../services/techProfile";
 import { loadLocationDefaults } from "../services/locationDefaults";
 import { resolveSourceDefaults } from "../services/schemaDefaults";
+import {
+  type FormPage,
+  buildPagesFromDocument,
+} from "../services/formPages";
+import { generateReportHtml, logoToDataUri } from "../services/pdfReport";
 
-// ─── Page model ──────────────────────────────────────────────────────────────
-
-export interface FormPage {
-  key: string;
-  sectionId: string;
-  subsectionId?: string;
-  groupKey: string;
-  clause?: string;
-  title: string;
-  isRepeatable: boolean;
-  isOptional: boolean;
-  isApplicable: boolean;
-  repeatableGroupId?: string; // key in repeatableGroups used for add/remove; = subsectionId for repeatable_subsection
-}
-
-function makePages(
-  schema: InspectionSchema,
-  sectionId: string,
-  groupKey: string,
-  repeatableGroups: Record<string, string[]> = {},
-): FormPage[] {
-  const section = schema.sections.find((s) => s.id === sectionId)!;
-  const isRepeatable = section.type === "repeatable_section";
-
-  if (section.subsections && section.subsections.length > 0) {
-    return section.subsections.flatMap((sub, subIndex) => {
-      if (sub.type === "repeatable_subsection") {
-        const subGroupKeys = repeatableGroups[sub.id] ?? [`${sub.id}__0`];
-        return subGroupKeys.map((sgk) => ({
-          key: sgk,
-          sectionId: section.id,
-          subsectionId: sub.id,
-          groupKey: sgk,
-          clause: sub.clause,
-          title: sub.title,
-          isRepeatable: true,
-          isOptional: !!sub.applicable_toggle,
-          isApplicable: sub.applicable_toggle ? sub.applicable_toggle.default : true,
-          repeatableGroupId: sub.id,
-        }));
-      }
-      return [{
-        key: `${groupKey}__${sub.id}`,
-        sectionId: section.id,
-        subsectionId: sub.id,
-        groupKey,
-        clause:
-          sub.clause ??
-          (section.clause ? `${section.clause} (${subIndex + 1})` : undefined),
-        title: sub.title,
-        isRepeatable,
-        isOptional: !!sub.applicable_toggle,
-        isApplicable: sub.applicable_toggle ? sub.applicable_toggle.default : true,
-        repeatableGroupId: isRepeatable ? sectionId : undefined,
-      }];
-    });
-  }
-
-  return [
-    {
-      key: `${groupKey}__${section.id}`,
-      sectionId: section.id,
-      subsectionId: undefined,
-      groupKey,
-      clause: section.clause,
-      title: section.title,
-      isRepeatable,
-      isOptional: !!section.applicable_toggle,
-      isApplicable: section.applicable_toggle
-        ? section.applicable_toggle.default
-        : true,
-      repeatableGroupId: isRepeatable ? sectionId : undefined,
-    },
-  ];
-}
-
-function buildPagesFromDocument(
-  schema: InspectionSchema,
-  repeatableGroups: Record<string, string[]>,
-  applicableStates: Record<string, boolean>,
-): FormPage[] {
-  return schema.sections.flatMap((section) => {
-    const groupKeys = repeatableGroups[section.id] ?? [`${section.id}__0`];
-    return groupKeys.flatMap((groupKey) => {
-      const rawPages = makePages(schema, section.id, groupKey, repeatableGroups);
-      return rawPages.map((p) => {
-        if (p.isOptional && applicableStates[p.key] !== undefined) {
-          return { ...p, isApplicable: applicableStates[p.key] };
-        }
-        return p;
-      });
-    });
-  });
-}
+export type { FormPage };
 
 function resolveDefault(value: string): string {
   if (value === "$today") return new Date().toISOString().slice(0, 10);
@@ -184,7 +96,6 @@ function createInitialDocument(schema: InspectionSchema): InspectionDocument {
     applicableStates: {},
     fieldValues: collectFieldDefaults(schema),
     listItems: {},
-    deviceRecords: {},
     legend: [...STANDARD_LEGEND],
   };
 }
@@ -468,6 +379,13 @@ function InspectionContent({ schema, navigation }: ContentProps) {
           setSidebarOpen(false);
           shareInspection(doc).catch(() => {});
         }}
+        onExportPdf={async () => {
+          setSidebarOpen(false);
+          const profile = await loadProfile();
+          const logoDataUri = await logoToDataUri(profile.logoUri);
+          const html = generateReportHtml(doc, schema, profile, logoDataUri);
+          navigation.navigate("ReportPreview", { html, filename: doc.filename });
+        }}
         onCloseInspection={() => navigation.goBack()}
       />
 
@@ -624,18 +542,15 @@ export default function InspectionScreen({
         .then(([profile, tech, loc]) => {
           const profiles = { company_profile: profile, tech_profile: tech, location: loc };
           const doc = createInitialDocument(schema);
-          const merged = {
-            ...doc.fieldValues,
-            ...resolveSourceDefaults(schema, profiles),
-          };
-          console.log("[DEBUG new doc] collectFieldDefaults:", doc.fieldValues);
-          console.log("[DEBUG new doc] merged fieldValues:", merged);
-          setPendingNewDoc({ ...doc, fieldValues: merged });
+          setPendingNewDoc({
+            ...doc,
+            fieldValues: {
+              ...doc.fieldValues,
+              ...resolveSourceDefaults(schema, profiles),
+            },
+          });
         })
-        .catch((err) => {
-          console.log("[DEBUG new doc] profile load failed:", err);
-          setPendingNewDoc(createInitialDocument(schema));
-        });
+        .catch(() => setPendingNewDoc(createInitialDocument(schema)));
     }
   }, []);
 
@@ -703,7 +618,7 @@ export default function InspectionScreen({
       <SafeAreaView style={s.safe}>
         <Modal visible transparent animationType="fade" statusBarTranslucent>
           <KeyboardAvoidingView
-            style={s.conflictOverlay}
+            style={s.modalOverlay}
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
             <View style={s.saveAsCard}>

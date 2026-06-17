@@ -4,6 +4,7 @@
   "title": "Fire Alarm System Annual Test & Inspection Record",
   "formId": "CAN/ULC-S536:2019-REV1",
   "version": "2019/2024",
+  "template": "can_ulc_s536",
   "description": "Mobile-optimized schema for the mandatory CAN/ULC-S536:2019 annual fire alarm inspection and test record. Sections mirror the standard's numbered clauses exactly.",
   "defaults": {
     "required": true
@@ -304,7 +305,8 @@
             {
               "id": "def_device_type",
               "label": "Device Type (See 23.1 Field Device Testing – Legend and Notes)",
-              "type": "string"
+              "type": "dropdown",
+              "options_source": "s23_1"
             },
             {
               "id": "def_location",
@@ -1799,7 +1801,7 @@
               "id": "dev_type",
               "label": "Device Type",
               "type": "dropdown",
-              "options_source": "legend:code",
+              "options_source": "s23_1",
               "hint": "Select from legend or type code"
             },
             {

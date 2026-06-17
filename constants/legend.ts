@@ -45,6 +45,11 @@ export function sortLegend(entries: DeviceLegendEntry[]): DeviceLegendEntry[] {
     const bIsDash = b.code === '–'
     if (aIsDash && !bIsDash) return 1
     if (!aIsDash && bIsDash) return -1
-    return a.code.localeCompare(b.code)
+    const byCode = a.code.localeCompare(b.code)
+    if (byCode !== 0) return byCode
+    // Same code: standard entries sort before custom so they're easier to distinguish
+    if (a.isStandard && !b.isStandard) return -1
+    if (!a.isStandard && b.isStandard) return 1
+    return 0
   })
 }

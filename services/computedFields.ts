@@ -1,4 +1,4 @@
-import type { InspectionSchema } from '../schema/types'
+import type { InspectionSchema } from '../form_schema/types'
 import { defaultGroupKeyForField } from './schemaDefaults'
 
 /**

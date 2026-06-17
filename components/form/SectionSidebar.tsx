@@ -6,7 +6,7 @@ import {
 import { Feather } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
-import type { InspectionSchema } from '../../schema/types'
+import type { InspectionSchema } from '../../form_schema/types'
 import type { FormPage } from '../../screens/InspectionScreen'
 
 const SIDEBAR_WIDTH = Math.min(Dimensions.get('window').width * 0.82, 320)
@@ -25,6 +25,7 @@ interface Props {
   onToggleAutoSave: () => void
   onSaveAs: () => void
   onShare: () => void
+  onExportPdf: () => void
   onCloseInspection: () => void
 }
 
@@ -61,7 +62,7 @@ type DisplayItem = GroupHeaderItem | SectionContainerItem | PageItem
 export default function SectionSidebar({
   visible, pages, currentPageKey, schema,
   onNavigate, onAddGroup, onRemoveGroup, onClose,
-  autoSave, onToggleAutoSave, onSaveAs, onShare, onCloseInspection,
+  autoSave, onToggleAutoSave, onSaveAs, onShare, onExportPdf, onCloseInspection,
 }: Props) {
   const insets = useSafeAreaInsets()
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current
@@ -334,6 +335,14 @@ export default function SectionSidebar({
             activeOpacity={0.7}
           >
             <Text style={s.footerBtnText}>Share…</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.footerBtn}
+            onPress={() => { onClose(); onExportPdf() }}
+            activeOpacity={0.7}
+          >
+            <Text style={s.footerBtnText}>Export PDF…</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

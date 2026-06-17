@@ -7,6 +7,7 @@ interface Props {
   label: string;
   required?: boolean;
   options: string[];
+  optionLabels?: string[];  // display strings parallel to options; options[i] stored, optionLabels[i] shown
   value?: string | null;
   onChange?: (val: string) => void;
 }
@@ -15,12 +16,18 @@ export default function DropdownField({
   label,
   required,
   options,
+  optionLabels,
   value,
   onChange,
 }: Props) {
   const [internal, setInternal] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const val = value !== undefined ? value : internal;
+
+  // Resolve stored value back to display label for the button
+  const displayVal = val
+    ? (optionLabels?.[options.indexOf(val)] ?? val)
+    : null;
 
   const handleChange = (v: string) => {
     if (onChange) onChange(v);
@@ -32,19 +39,19 @@ export default function DropdownField({
     <View style={s.container}>
       <FieldLabel label={label} required={required} />
       <TouchableOpacity style={s.btn} onPress={() => setOpen(!open)}>
-        <Text style={val ? s.val : s.placeholder}>{val ?? "Select…"}</Text>
+        <Text style={displayVal ? s.val : s.placeholder}>{displayVal ?? "Select…"}</Text>
         <Text style={s.chevron}>{open ? "▲" : "▼"}</Text>
       </TouchableOpacity>
       {open && (
         <View style={s.list}>
-          {options.map((opt) => (
+          {options.map((opt, i) => (
             <TouchableOpacity
-              key={opt}
+              key={`${i}-${opt}`}
               style={[s.item, val === opt && s.itemActive]}
               onPress={() => handleChange(opt)}
             >
               <Text style={[s.itemText, val === opt && s.itemTextActive]}>
-                {opt}
+                {optionLabels?.[i] ?? opt}
               </Text>
             </TouchableOpacity>
           ))}
@@ -67,8 +74,8 @@ const s = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
   },
-  val: { fontSize: FontSize.lg, color: Colors.primary },
-  placeholder: { fontSize: FontSize.lg, color: Colors.secondary },
+  val: { fontSize: FontSize.lg, color: Colors.primary, flex: 1 },
+  placeholder: { fontSize: FontSize.lg, color: Colors.secondary, flex: 1 },
   chevron: { fontSize: FontSize.xs, color: Colors.secondary },
   list: {
     borderWidth: 1,

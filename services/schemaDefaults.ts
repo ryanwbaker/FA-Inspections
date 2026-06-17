@@ -1,4 +1,4 @@
-import type { InspectionSchema, FieldDefinition, SectionDefinition, SubsectionDefinition } from '../schema/types'
+import type { InspectionSchema, FieldDefinition, SectionDefinition, SubsectionDefinition } from '../form_schema/types'
 
 // Group key a field falls under by default: the parent (sub)section's first
 // instance, following the same convention makePages/collectFieldDefaults use —

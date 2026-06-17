@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react'
 import type { InspectionDocument, InspectionAction } from '../types/inspection'
-import type { InspectionSchema } from '../schema/types'
+import type { InspectionSchema } from '../form_schema/types'
 
 interface ContextValue {
   doc: InspectionDocument
@@ -24,9 +24,6 @@ export function inspectionReducer(
 
     case 'SET_LIST_ITEMS':
       return { ...state, updatedAt: now, listItems: { ...state.listItems, [action.key]: action.items } }
-
-    case 'SET_DEVICE_RECORDS':
-      return { ...state, updatedAt: now, deviceRecords: { ...state.deviceRecords, [action.key]: action.records } }
 
     case 'SET_LEGEND':
       return { ...state, updatedAt: now, legend: action.legend }
@@ -59,13 +56,10 @@ export function inspectionReducer(
       const listItems = Object.fromEntries(
         Object.entries(state.listItems).filter(([k]) => !k.startsWith(prefix)),
       )
-      const deviceRecords = Object.fromEntries(
-        Object.entries(state.deviceRecords).filter(([k]) => !k.startsWith(prefix)),
-      )
       const applicableStates = Object.fromEntries(
         Object.entries(state.applicableStates).filter(([k]) => !action.pageKeys.includes(k)),
       )
-      return { ...state, updatedAt: now, repeatableGroups: updatedGroups, fieldValues, listItems, deviceRecords, applicableStates }
+      return { ...state, updatedAt: now, repeatableGroups: updatedGroups, fieldValues, listItems, applicableStates }
     }
 
     case 'SET_FILENAME':

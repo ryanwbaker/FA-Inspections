@@ -1,6 +1,11 @@
 import { Text, StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight } from "../../tokens";
-import { parseMarkup } from "./RichText";
+
+// Strip HTML tags from schema labels — italic/bold markup is for PDF output only.
+// A single flat <Text> avoids Fabric's nested-Text height-measurement bug.
+function stripMarkup(s: string): string {
+  return s.replace(/<\/?[a-z][^>]*>/gi, '')
+}
 
 interface Props {
   label: string;
@@ -8,27 +13,9 @@ interface Props {
 }
 
 export default function FieldLabel({ label, required }: Props) {
-  const segments = parseMarkup(label)
-  const isPlain = segments.every(seg => !seg.bold && !seg.italic && !seg.underline)
-
   return (
     <Text style={s.label}>
-      {isPlain
-        ? label
-        : segments.map((seg, i) => (
-            <Text
-              key={i}
-              style={[
-                seg.bold && s.bold,
-                seg.italic && s.italic,
-                seg.underline && s.underline,
-              ]}
-            >
-              {seg.text}
-            </Text>
-          ))
-      }
-      {required && <Text style={s.star}> *</Text>}
+      {stripMarkup(label)}{required ? ' *' : ''}
     </Text>
   );
 }
@@ -38,11 +25,6 @@ const s = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.primary,
     marginBottom: 6,
-    lineHeight: 20,
     fontWeight: FontWeight.regular,
   },
-  star: { color: Colors.accent },
-  bold: { fontWeight: "bold" },
-  italic: { fontStyle: "italic" },
-  underline: { textDecorationLine: "underline" },
 });

@@ -38,11 +38,13 @@ export interface FieldDefinition {
   type: FieldType
   required?: boolean       // defaults to true per schema defaults
   options?: string[]
+  optionLabels?: string[]  // parallel display strings for options; optionLabels[i] shown, options[i] stored
+  options_source?: string | string[]  // ID (or array of IDs) of device_legend sections — populates options from doc.legend at render time
+  options_display?: 'code' | 'description' | 'both'  // how legend options are labelled (default: 'both')
   conditional_on?: ConditionalOn
   hint?: string
   auto_increment?: boolean
   source?: string          // profile default key, e.g. "company_profile.name", "tech_profile.cert_number", "location.city"
-  options_source?: string  // dynamic options lookup, e.g. "legend:code" — populates `options` from doc.legend at render time
   group_label?: string     // visual group header rendered before this field within its card
   default?: string         // pre-populated value on new inspection creation
   computed?: string        // computation key; "list_non_empty:<listId>" | "field_non_empty:<fieldId>" | "pdf_page_count"
@@ -102,6 +104,7 @@ export interface InspectionSchema {
   formId: string
   version: string
   description: string
+  template?: string   // ID of the PDF template in forms/ (defaults to schema id)
   defaults: {
     required: boolean
   }

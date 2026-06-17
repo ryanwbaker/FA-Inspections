@@ -4,10 +4,11 @@ import { Feather } from '@expo/vector-icons'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { ConfirmModal } from '../primitives'
 import ItemModal from './ItemModal'
-import type { FieldDefinition } from '../../schema/types'
+import type { FieldDefinition } from '../../form_schema/types'
 import type { StoredListItem } from '../../types/inspection'
 import { useInspection } from '../../context/InspectionContext'
 import { sortLegend, type DeviceLegendEntry } from '../../constants/legend'
+import type { InspectionSchema } from '../../form_schema/types'
 
 const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
 
@@ -21,16 +22,72 @@ function makeBlankItem(fields: FieldDefinition[], nextNum: number): Item {
   return { id: newId(), values }
 }
 
-// Resolves `options_source: "legend:<column>"` into a static `options` array,
-// pulled from the inspection's device legend at render time.
-function resolveOptions(fields: FieldDefinition[], legend: DeviceLegendEntry[]): FieldDefinition[] {
+// Returns true if options_source refers to a device_legend section/subsection.
+function isLegendSource(source: string, schema: InspectionSchema): boolean {
+  if (source.startsWith('legend:')) return true  // legacy syntax
+  for (const section of schema.sections) {
+    if (section.id === source && section.type === 'device_legend') return true
+    for (const sub of section.subsections ?? []) {
+      if (sub.id === source && sub.type === 'device_legend') return true
+    }
+  }
+  return false
+}
+
+// Builds the display label for a legend entry based on options_display.
+// Custom entries (isStandard: false) get a suffix so they're distinguishable
+// from any standard entry that shares the same code.
+function legendLabel(e: DeviceLegendEntry, display: 'code' | 'description' | 'both'): string {
+  const suffix = e.isStandard ? '' : ' (custom)'
+  if (display === 'code') return `${e.code}${suffix}`
+  if (display === 'description') return `${e.description}${suffix}`
+  return `${e.code} — ${e.description}${suffix}`
+}
+
+// Resolves `options_source` into options (stored values) + optionLabels (display strings).
+//
+// Stored value = legend entry `id` (always unique, even when codes collide like "–").
+// Display label = controlled by field.options_display ('code' | 'description' | 'both').
+//
+// options_source accepts a single ID or an array of IDs. All referenced legend sections
+// draw from doc.legend (which holds both standard and custom entries), deduplicated by id.
+function resolveOptions(
+  fields: FieldDefinition[],
+  legend: DeviceLegendEntry[],
+  schema: InspectionSchema,
+): FieldDefinition[] {
   return fields.map(f => {
-    if (!f.options_source?.startsWith('legend:')) return f
-    const col = f.options_source.slice('legend:'.length) as keyof DeviceLegendEntry
-    const options = sortLegend(legend)
-      .map(e => e[col])
-      .filter((v): v is string => typeof v === 'string' && v.length > 0)
-    return { ...f, options }
+    if (!f.options_source) return f
+
+    const sources = Array.isArray(f.options_source) ? f.options_source : [f.options_source]
+    const display = f.options_display ?? 'both'
+
+    // Legacy "legend:<col>" syntax — value = code (may not be unique), label = formatted
+    if (sources.length === 1 && sources[0].startsWith('legend:')) {
+      const col = sources[0].slice('legend:'.length) as keyof DeviceLegendEntry
+      const sorted = sortLegend(legend)
+      const options = sorted.map(e => e[col]).filter((v): v is string => typeof v === 'string' && v.length > 0)
+      const optionLabels = sorted.filter(e => typeof e[col] === 'string').map(e => legendLabel(e, display))
+      return { ...f, options, optionLabels }
+    }
+
+    // ID-based: collect entries from doc.legend for each referenced legend section,
+    // deduplicated by entry.id. doc.legend already contains all entries (standard + custom).
+    const legendSources = sources.filter(s => isLegendSource(s, schema))
+    if (legendSources.length === 0) return f
+
+    const seen = new Set<string>()
+    const entries: DeviceLegendEntry[] = []
+    for (const e of sortLegend(legend)) {
+      if (!seen.has(e.id)) {
+        seen.add(e.id)
+        entries.push(e)
+      }
+    }
+
+    const options = entries.map(e => e.id)
+    const optionLabels = entries.map(e => legendLabel(e, display))
+    return { ...f, options, optionLabels }
   })
 }
 
@@ -65,14 +122,14 @@ interface Props {
 }
 
 export default function ItemList({ itemFields, groupKey, targetId }: Props) {
-  const { doc, dispatch } = useInspection()
+  const { doc, dispatch, schema } = useInspection()
   const ctxKey = `${groupKey}/${targetId}`
   const items = doc.listItems[ctxKey] ?? []
   const setItems = (next: Item[]) => dispatch({ type: 'SET_LIST_ITEMS', key: ctxKey, items: next })
   const [editing, setEditing] = useState<{ item: Item; isNew: boolean } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-  const resolvedFields = resolveOptions(itemFields, doc.legend)
+  const resolvedFields = resolveOptions(itemFields, doc.legend, schema)
 
   const autoIncrField = resolvedFields.find(f => f.auto_increment)
   const nextNum = autoIncrField

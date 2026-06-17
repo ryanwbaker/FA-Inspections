@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy'
 import * as DocumentPicker from 'expo-document-picker'
-import type { InspectionSchema } from '../schema/types'
+import type { InspectionSchema } from '../form_schema/types'
 import { findFieldBySource } from './schemaDefaults'
 
 const DIR = FileSystem.documentDirectory + 'settings/'

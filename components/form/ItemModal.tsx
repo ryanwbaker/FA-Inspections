@@ -8,7 +8,9 @@ import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { FieldLabel, Divider } from '../primitives'
 import DateField from '../fields/DateField'
 import TriStateField from '../fields/TriStateField'
-import type { FieldDefinition } from '../../schema/types'
+import PassFailField from '../fields/PassFailField'
+import DropdownField from '../fields/DropdownField'
+import type { FieldDefinition } from '../../form_schema/types'
 import type { TriStateVal } from '../fields'
 
 export type ItemValues = Record<string, string>
@@ -104,6 +106,28 @@ function ControlledField({
         </View>
       )
     }
+
+    case 'dropdown':
+      return (
+        <DropdownField
+          label={field.label}
+          required={required}
+          options={field.options ?? []}
+          optionLabels={field.optionLabels}
+          value={value || null}
+          onChange={set}
+        />
+      )
+
+    case 'pass_fail':
+      return (
+        <PassFailField
+          label={field.label}
+          required={required}
+          value={(value || null) as 'pass' | 'fail' | null}
+          onChange={v => set(v)}
+        />
+      )
 
     case 'textarea':
       return (
