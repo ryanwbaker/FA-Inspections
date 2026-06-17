@@ -1,9 +1,12 @@
+import type { InspectionSchema } from '../schema/types'
+import { defaultGroupKeyForField } from './schemaDefaults'
+
 /**
  * Resolves computed field values from inspection document state.
  *
- * - 'pdf_page_count'   : returns null — resolved at PDF generation time only.
- * - 'has_deficiencies' : 'Yes' if the deficiency list has any items, else 'No'.
- * - 'has_recommendations' : 'Yes' if recommendations notes is non-empty, else 'No'.
+ * - 'list_non_empty:<listId>'   : 'Yes' if that list has any items, else 'No'.
+ * - 'field_non_empty:<fieldId>' : 'Yes' if that field's value is non-empty, else 'No'.
+ * - 'pdf_page_count'            : returns null — resolved at PDF generation time only.
  *
  * Returns null when the value cannot be determined at form time.
  */
@@ -11,18 +14,25 @@ export function resolveComputedField(
   key: string,
   fieldValues: Record<string, string>,
   listItems: Record<string, unknown[]>,
+  schema: InspectionSchema,
 ): string | null {
-  switch (key) {
-    case 'has_deficiencies':
-      return (listItems['s20_2_deficiencies']?.length ?? 0) > 0 ? 'Yes' : 'No'
+  if (key === 'pdf_page_count') return null
 
-    case 'has_recommendations': {
-      const notes = fieldValues['s20_3__0/recommendations_notes']?.trim() ?? ''
-      return notes.length > 0 ? 'Yes' : 'No'
+  const [operator, ref] = key.split(':')
+
+  switch (operator) {
+    case 'list_non_empty': {
+      const groupKey = defaultGroupKeyForField(schema, ref)
+      if (!groupKey) return null
+      return (listItems[`${groupKey}/${ref}`]?.length ?? 0) > 0 ? 'Yes' : 'No'
     }
 
-    case 'pdf_page_count':
-      return null
+    case 'field_non_empty': {
+      const groupKey = defaultGroupKeyForField(schema, ref)
+      if (!groupKey) return null
+      const val = fieldValues[`${groupKey}/${ref}`]?.trim() ?? ''
+      return val.length > 0 ? 'Yes' : 'No'
+    }
 
     default:
       return null

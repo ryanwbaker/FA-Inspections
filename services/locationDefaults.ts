@@ -37,13 +37,3 @@ export async function saveLocationDefaults(loc: LocationDefaults): Promise<void>
     encoding: FileSystem.EncodingType.UTF8,
   })
 }
-
-const GROUP_KEY = 's20__0'
-
-export function locationToFieldValues(loc: LocationDefaults): Record<string, string> {
-  const values: Record<string, string> = {}
-  if (loc.country.trim()) values[`${GROUP_KEY}/building_country`] = loc.country.trim()
-  if (loc.province.trim()) values[`${GROUP_KEY}/building_province_state`] = loc.province.trim()
-  if (loc.city.trim()) values[`${GROUP_KEY}/building_city`] = loc.city.trim()
-  return values
-}

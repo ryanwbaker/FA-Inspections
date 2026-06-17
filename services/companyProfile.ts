@@ -1,5 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy'
 import * as DocumentPicker from 'expo-document-picker'
+import type { InspectionSchema } from '../schema/types'
+import { findFieldBySource } from './schemaDefaults'
 
 const DIR = FileSystem.documentDirectory + 'settings/'
 const PROFILE_PATH = DIR + 'profile.json'
@@ -59,26 +61,17 @@ export async function pickAndSaveLogo(): Promise<string | null> {
 
 // ─── Helpers for InspectionScreen ────────────────────────────────────────────
 
-// s20_1 is a subsection of s20; makePages passes the parent section's groupKey down,
-// so all fields in s20_1 are stored under the s20 groupKey.
-export const SVC_GROUP_KEY = 's20__0'
-
-export function profileToSvcValues(profile: CompanyProfile): Record<string, string> {
-  const g = SVC_GROUP_KEY
-  return {
-    [`${g}/primary_tech_company`]: profile.name,
-    [`${g}/primary_tech_phone`]: profile.phone,
-  }
-}
-
 export function profileIsPopulated(profile: CompanyProfile): boolean {
   return profile.name.trim().length > 0
 }
 
 export function fileSvcDiffersFromProfile(
+  schema: InspectionSchema,
   fieldValues: Record<string, string>,
   profile: CompanyProfile,
 ): boolean {
-  const fileName = fieldValues[`${SVC_GROUP_KEY}/primary_tech_company`]?.trim() ?? ''
+  const ref = findFieldBySource(schema, 'company_profile.name')
+  if (!ref) return false
+  const fileName = fieldValues[`${ref.groupKey}/${ref.fieldId}`]?.trim() ?? ''
   return fileName.length > 0 && fileName !== profile.name.trim()
 }

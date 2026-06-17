@@ -37,10 +37,10 @@ function ComputedDisplay({ label, value }: { label: string; value: string | null
 }
 
 export default function FormField({ field, groupKey }: Props) {
-  const { doc, dispatch } = useInspection()
+  const { doc, dispatch, schema } = useInspection()
 
   if (field.computed) {
-    const resolved = resolveComputedField(field.computed, doc.fieldValues, doc.listItems)
+    const resolved = resolveComputedField(field.computed, doc.fieldValues, doc.listItems, schema)
     return <ComputedDisplay label={field.label} value={resolved} />
   }
 

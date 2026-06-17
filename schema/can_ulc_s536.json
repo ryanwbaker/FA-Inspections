@@ -1,7 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "id": "can_ulc_s536_2019",
-  "title": "CAN/ULC-S536:2019 Fire Alarm System Annual Test & Inspection Record",
+  "title": "Fire Alarm System Annual Test & Inspection Record",
+  "formId": "CAN/ULC-S536:2019-REV1",
   "version": "2019/2024",
   "description": "Mobile-optimized schema for the mandatory CAN/ULC-S536:2019 annual fire alarm inspection and test record. Sections mirror the standard's numbered clauses exactly.",
   "defaults": {
@@ -48,7 +49,7 @@
               "id": "building_name",
               "label": "<i>Building</i> Name",
               "type": "string",
-              "group_label": "Site"
+              "group_label": "Building Details"
             },
             {
               "id": "building_address_1",
@@ -64,7 +65,8 @@
             {
               "id": "building_city",
               "label": "City",
-              "type": "string"
+              "type": "string",
+              "source": "location.city"
             },
             {
               "id": "building_postal_zip",
@@ -74,12 +76,14 @@
             {
               "id": "building_province_state",
               "label": "Province / State",
-              "type": "string"
+              "type": "string",
+              "source": "location.province"
             },
             {
               "id": "building_country",
               "label": "Country",
-              "type": "string"
+              "type": "string",
+              "source": "location.country"
             },
             {
               "id": "building_owner_representative",
@@ -90,7 +94,7 @@
               "id": "system_manufacturer",
               "label": "Manufacturer",
               "type": "string",
-              "group_label": "Fire Alarm System"
+              "group_label": "Fire Alarm System Details"
             },
             {
               "id": "system_model_number",
@@ -154,7 +158,7 @@
               "id": "sum_deficiencies_found",
               "label": "During the Annual Inspection and Test were any <i>Deficiencies</i> identified? See Page 2, if applicable.",
               "type": "boolean_yn",
-              "computed": "has_deficiencies"
+              "computed": "list_non_empty:s20_2_deficiencies"
             },
             {
               "id": "sum_deficiencies_corrected_date",
@@ -170,23 +174,26 @@
               "id": "sum_recommendations_found",
               "label": "During the Annual Inspection and Test were any <i>Recommendations</i> Identified? See Page 3, if applicable.",
               "type": "boolean_yn",
-              "computed": "has_recommendations"
+              "computed": "field_non_empty:recommendations_notes"
             },
             {
               "id": "primary_tech_name",
               "label": "Printed Name of Person Responsible",
               "type": "string",
-              "group_label": "Person Responsible"
+              "group_label": "Person Responsible",
+              "source": "tech_profile.name"
             },
             {
               "id": "primary_tech_company",
               "label": "Company Conducting Test",
-              "type": "string"
+              "type": "string",
+              "source": "company_profile.name"
             },
             {
               "id": "primary_tech_phone",
               "label": "Company Telephone",
-              "type": "phone"
+              "type": "phone",
+              "source": "company_profile.phone"
             },
             {
               "id": "primary_tech_signature",
@@ -197,7 +204,8 @@
             {
               "id": "primary_tech_id",
               "label": "Certificate/ID Number of Person Responsible",
-              "type": "string"
+              "type": "string",
+              "source": "tech_profile.certNumber"
             },
             {
               "id": "has_secondary_tech",
@@ -468,7 +476,7 @@
         },
         {
           "id": "doc_E",
-          "label": "E — Description of alarm signal <i>operation</i>.",
+          "label": "E — Description of alarm <i>signal operation</i>.",
           "type": "boolean_yn"
         },
         {
@@ -1764,284 +1772,16 @@
           "id": "s23_1",
           "clause": "23.1",
           "title": "Field Device Testing — Legend",
+          "type": "device_legend",
           "description": "Device type codes reference table. Used to populate Device Type in the Individual Device Record.",
-          "mobile_note": "This is a read-only reference displayed as an in-app glossary or searchable picker. Not a fillable section.",
-          "device_type_legend": [
-            {
-              "code": "M",
-              "category": "Manual Initiating",
-              "description": "Manual pull station"
-            },
-            {
-              "code": "MAS",
-              "category": "Manual Initiating",
-              "description": "Manual Abort Station"
-            },
-            {
-              "code": "HT",
-              "category": "Automatic Fire Detection",
-              "description": "Heat Detector, restorable or non-restorable, fixed temperature"
-            },
-            {
-              "code": "RHT",
-              "category": "Automatic Fire Detection",
-              "description": "Heat Detector, restorable, rate-of-rise thermostat"
-            },
-            {
-              "code": "S",
-              "category": "Automatic Fire Detection",
-              "description": "Ionization Smoke Detector"
-            },
-            {
-              "code": "PS",
-              "category": "Automatic Fire Detection",
-              "description": "Photo-electric Smoke Detector"
-            },
-            {
-              "code": "DS",
-              "category": "Automatic Fire Detection",
-              "description": "Duct Smoke Detector"
-            },
-            {
-              "code": "MC",
-              "category": "Automatic Fire Detection",
-              "description": "Multi-Criteria Detector (specify detection types)"
-            },
-            {
-              "code": "CO",
-              "category": "Automatic Fire Detection",
-              "description": "Carbon Monoxide Detector"
-            },
-            {
-              "code": "OD",
-              "category": "Automatic Fire Detection",
-              "description": "Other Detector (specify)"
-            },
-            {
-              "code": "EOL(R)",
-              "category": "Automatic Fire Detection",
-              "description": "End-of-Line Resistor ('R' = Power Supervision Relay)"
-            },
-            {
-              "code": "FS",
-              "category": "Fire Sprinkler",
-              "description": "Sprinkler Flow Switch"
-            },
-            {
-              "code": "FPS",
-              "category": "Fire Sprinkler",
-              "description": "Sprinkler Flow Pressure Switch"
-            },
-            {
-              "code": "TS",
-              "category": "Fire Sprinkler",
-              "description": "Sprinkler Valve Supervisory Tamper Switch"
-            },
-            {
-              "code": "LA",
-              "category": "Fire Sprinkler",
-              "description": "Low Air supervisory device"
-            },
-            {
-              "code": "LT",
-              "category": "Fire Sprinkler",
-              "description": "Low Temperature supervisory device"
-            },
-            {
-              "code": "HTC",
-              "category": "Fire Sprinkler",
-              "description": "Heat Trace Controller"
-            },
-            {
-              "code": "TLW",
-              "category": "Fire Sprinkler",
-              "description": "Tank Low Water supervisory device"
-            },
-            {
-              "code": "B",
-              "category": "Signaling",
-              "description": "Bell"
-            },
-            {
-              "code": "H",
-              "category": "Signaling",
-              "description": "Horn"
-            },
-            {
-              "code": "SSAD",
-              "category": "Signaling",
-              "description": "Suite Silencing Audible Device"
-            },
-            {
-              "code": "SB",
-              "category": "Signaling",
-              "description": "Smoke Sounder Base"
-            },
-            {
-              "code": "V",
-              "category": "Signaling",
-              "description": "Visual Alarm Device (specify strobe type or corridor indicator)"
-            },
-            {
-              "code": "SP",
-              "category": "Signaling",
-              "description": "Cone-type Speaker"
-            },
-            {
-              "code": "HSP",
-              "category": "Signaling",
-              "description": "Horn Speaker"
-            },
-            {
-              "code": "AV",
-              "category": "Signaling",
-              "description": "Combination Audible/Visual Device (specify type, e.g., Horn/Strobe)"
-            },
-            {
-              "code": "SCIM",
-              "category": "Signaling",
-              "description": "Signal Circuit Isolation Module"
-            },
-            {
-              "code": "ET",
-              "category": "Signaling",
-              "description": "Emergency Telephone (Fire Fighter's Phone)"
-            },
-            {
-              "code": "SYNC",
-              "category": "Signaling",
-              "description": "Signaling Circuit Synchronization Module"
-            },
-            {
-              "code": "RPM",
-              "category": "Supporting Field (Addressable)",
-              "description": "Remote Point Module"
-            },
-            {
-              "code": "SRIM",
-              "category": "Supporting Field (Addressable)",
-              "description": "Single Point Remote Initiating Module"
-            },
-            {
-              "code": "DRIM",
-              "category": "Supporting Field (Addressable)",
-              "description": "Dual Input Remote Initiating Module"
-            },
-            {
-              "code": "EM",
-              "category": "Supporting Field (Addressable)",
-              "description": "Isolator Module"
-            },
-            {
-              "code": "SCRM",
-              "category": "Supporting Field (Addressable)",
-              "description": "Signal Circuit Remote Module"
-            },
-            {
-              "code": "RRM(S)",
-              "category": "Supporting Field (Addressable)",
-              "description": "Remote Relay Module ('S' = supervised outputs)"
-            },
-            {
-              "code": "RS",
-              "category": "Extinguishment Releasing",
-              "description": "Releasing Solenoid"
-            },
-            {
-              "code": "PDS",
-              "category": "Extinguishment Releasing",
-              "description": "Pressure Discharge Switch"
-            },
-            {
-              "code": "LPS",
-              "category": "Extinguishment Releasing",
-              "description": "Low Cylinder Pressure Switch"
-            },
-            {
-              "code": "DH",
-              "category": "Ancillary",
-              "description": "Door Holder ('M' = Magnetic, 'FL' = Fusible Link)"
-            },
-            {
-              "code": "DM",
-              "category": "Ancillary",
-              "description": "Damper Motor"
-            },
-            {
-              "code": "R",
-              "category": "Ancillary",
-              "description": "Relay"
-            },
-            {
-              "code": "AD",
-              "category": "Ancillary",
-              "description": "Other Ancillary Device"
-            },
-            {
-              "code": "SA",
-              "category": "Ancillary",
-              "description": "Smoke Alarm (specify single or multi-station type)"
-            }
-          ],
-          "sensitivity_test_info": {
-            "fields": [
-              {
-                "id": "smoke_ion_test_method",
-                "label": "Ionization (S) Sensitivity Test Method / Equipment",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_ion_range",
-                "label": "Ionization (S) Manufacturer's Sensitivity Range",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_photo_test_method",
-                "label": "Photo-electric (PS) Sensitivity Test Method / Equipment",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_photo_range",
-                "label": "Photo-electric (PS) Manufacturer's Sensitivity Range",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_duct_test_method",
-                "label": "Duct (DS) Sensitivity Test Method / Equipment",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_duct_range",
-                "label": "Duct (DS) Manufacturer's Sensitivity Range",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_mc_test_method",
-                "label": "Multi-Criteria (MC) Sensitivity Test Method / Equipment",
-                "type": "string",
-                "required": false
-              },
-              {
-                "id": "smoke_mc_range",
-                "label": "Multi-Criteria (MC) Manufacturer's Sensitivity Range",
-                "type": "string",
-                "required": false
-              }
-            ]
-          }
+          "mobile_note": "This is a read-only reference displayed as an in-app glossary or searchable picker. Not a fillable section."
         },
         {
           "id": "s23_2",
           "clause": "23.2",
           "title": "Individual Device Record",
           "description": "One row per field device. Repeatable. Legend: ✓ = Acceptable, ✗ = Unacceptable (log in §20.2), — = Not Applicable.",
-          "type": "repeatable_list",
+          "type": "device_record_list",
           "item_fields": [
             {
               "id": "dev_location",
@@ -2059,7 +1799,7 @@
               "id": "dev_type",
               "label": "Device Type",
               "type": "dropdown",
-              "source": "s23_1.device_type_legend",
+              "options_source": "legend:code",
               "hint": "Select from legend or type code"
             },
             {

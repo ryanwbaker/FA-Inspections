@@ -110,8 +110,8 @@ function Notes({ notes }: { notes: NoteEntry[] }) {
 }
 
 function SectionContent({ target, groupKey, legend, onLegendChange, prefixNotesBefore = [], prefixNotesAfter = [] }: ContentProps) {
-  const isDeviceRecord = target.id === 's23_2'
-  const isLegend = target.id === 's23_1'
+  const isDeviceRecord = target.type === 'device_record_list'
+  const isLegend = target.type === 'device_legend'
   const notesBefore = [...prefixNotesBefore, ...(target.notes_before ?? [])]
   const notesAfter = [...(target.notes_after ?? []), ...prefixNotesAfter]
 
@@ -119,7 +119,7 @@ function SectionContent({ target, groupKey, legend, onLegendChange, prefixNotesB
     return <LegendTable legend={legend} onLegendChange={onLegendChange} />
   }
 
-  if (target.type === 'repeatable_list') {
+  if (target.type === 'repeatable_list' || isDeviceRecord) {
     return (
       <View>
         {notesBefore.length > 0 && <Notes notes={notesBefore} />}
@@ -238,10 +238,11 @@ const s = StyleSheet.create({
 
   subsectionHeading: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: Spacing.sm,
   },
   subsectionClause: {
+    flexShrink: 0,
     fontSize: FontSize.xs,
     fontWeight: FontWeight.bold,
     color: Colors.accent,
@@ -252,6 +253,7 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   subsectionTitle: {
+    flex: 1,
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: Colors.primary,

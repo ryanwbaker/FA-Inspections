@@ -36,19 +36,12 @@ import {
 } from "../services/inspectionFiles";
 import {
   loadProfile,
-  profileToSvcValues,
   profileIsPopulated,
   fileSvcDiffersFromProfile,
 } from "../services/companyProfile";
-import {
-  loadTechProfile,
-  techToFieldValues,
-  techIsPopulated,
-} from "../services/techProfile";
-import {
-  loadLocationDefaults,
-  locationToFieldValues,
-} from "../services/locationDefaults";
+import { loadTechProfile } from "../services/techProfile";
+import { loadLocationDefaults } from "../services/locationDefaults";
+import { resolveSourceDefaults } from "../services/schemaDefaults";
 
 // ─── Page model ──────────────────────────────────────────────────────────────
 
@@ -363,9 +356,23 @@ function InspectionContent({ schema, navigation }: ContentProps) {
 
         <View style={s.headerCenter}>
           <View style={s.headerTitleRow}>
-            {displayClause && (
-              <View style={s.clauseBadge}>
-                <Text style={s.clauseText}>§{displayClause}</Text>
+            {(displayClause || saveLabel) && (
+              <View style={s.headerLeftCol}>
+                {displayClause && (
+                  <View style={s.clauseBadge}>
+                    <Text style={s.clauseText}>§{displayClause}</Text>
+                  </View>
+                )}
+                {saveLabel ? (
+                  <Text
+                    style={[
+                      s.saveStatus,
+                      saveStatus === "error" && s.saveStatusError,
+                    ]}
+                  >
+                    {saveLabel}
+                  </Text>
+                ) : null}
               </View>
             )}
             <Text style={s.headerTitle} numberOfLines={2}>
@@ -380,16 +387,6 @@ function InspectionContent({ schema, navigation }: ContentProps) {
               </TouchableOpacity>
             )}
           </View>
-          {saveLabel ? (
-            <Text
-              style={[
-                s.saveStatus,
-                saveStatus === "error" && s.saveStatusError,
-              ]}
-            >
-              {saveLabel}
-            </Text>
-          ) : null}
         </View>
 
         <TouchableOpacity style={s.iconBtn} onPress={() => navigation.goBack()}>
@@ -564,19 +561,24 @@ export default function InspectionScreen({
             loadTechProfile(),
             loadLocationDefaults(),
           ]);
-          // Apply tech values silently when the file's tech name is blank
-          const techValues =
-            techIsPopulated(tech) &&
-            !doc.fieldValues[`s20__0/primary_tech_name`]?.trim()
-              ? techToFieldValues(tech)
-              : {};
-          // Apply location defaults silently when the file's location fields are blank
-          const locValues = !doc.fieldValues[`s20__0/building_country`]?.trim()
-            ? locationToFieldValues(loc)
-            : {};
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
+
+          // Apply tech/location defaults silently when the file's fields are blank
+          const techValues = resolveSourceDefaults(schema, profiles, {
+            prefix: "tech_profile.",
+            skipIfFilled: doc.fieldValues,
+          });
+          const locValues = resolveSourceDefaults(schema, profiles, {
+            prefix: "location.",
+            skipIfFilled: doc.fieldValues,
+          });
+          const profileValues = resolveSourceDefaults(schema, profiles, {
+            prefix: "company_profile.",
+          });
+
           if (
             profileIsPopulated(profile) &&
-            fileSvcDiffersFromProfile(doc.fieldValues, profile)
+            fileSvcDiffersFromProfile(schema, doc.fieldValues, profile)
           ) {
             setPendingConflict({
               doc: {
@@ -587,22 +589,17 @@ export default function InspectionScreen({
                   ...techValues,
                 },
               },
-              profileValues: profileToSvcValues(profile),
-            });
-          } else if (profileIsPopulated(profile)) {
-            setInitialDoc({
-              ...doc,
-              fieldValues: {
-                ...doc.fieldValues,
-                ...profileToSvcValues(profile),
-                ...locValues,
-                ...techValues,
-              },
+              profileValues,
             });
           } else {
             setInitialDoc({
               ...doc,
-              fieldValues: { ...doc.fieldValues, ...locValues, ...techValues },
+              fieldValues: {
+                ...doc.fieldValues,
+                ...profileValues,
+                ...locValues,
+                ...techValues,
+              },
             });
           }
         })
@@ -612,32 +609,33 @@ export default function InspectionScreen({
             loadTechProfile(),
             loadLocationDefaults(),
           ]);
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
           const doc = createInitialDocument(schema);
           setInitialDoc({
             ...doc,
             fieldValues: {
               ...doc.fieldValues,
-              ...profileToSvcValues(profile),
-              ...locationToFieldValues(loc),
-              ...techToFieldValues(tech),
+              ...resolveSourceDefaults(schema, profiles),
             },
           });
         });
     } else {
       Promise.all([loadProfile(), loadTechProfile(), loadLocationDefaults()])
         .then(([profile, tech, loc]) => {
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
           const doc = createInitialDocument(schema);
-          setPendingNewDoc({
-            ...doc,
-            fieldValues: {
-              ...doc.fieldValues,
-              ...profileToSvcValues(profile),
-              ...locationToFieldValues(loc),
-              ...techToFieldValues(tech),
-            },
-          });
+          const merged = {
+            ...doc.fieldValues,
+            ...resolveSourceDefaults(schema, profiles),
+          };
+          console.log("[DEBUG new doc] collectFieldDefaults:", doc.fieldValues);
+          console.log("[DEBUG new doc] merged fieldValues:", merged);
+          setPendingNewDoc({ ...doc, fieldValues: merged });
         })
-        .catch(() => setPendingNewDoc(createInitialDocument(schema)));
+        .catch((err) => {
+          console.log("[DEBUG new doc] profile load failed:", err);
+          setPendingNewDoc(createInitialDocument(schema));
+        });
     }
   }, []);
 
@@ -709,7 +707,16 @@ export default function InspectionScreen({
             behavior={Platform.OS === "ios" ? "padding" : undefined}
           >
             <View style={s.saveAsCard}>
-              <Text style={s.saveAsTitle}>Name this Inspection</Text>
+              <View style={s.saveAsHeader}>
+                <Text style={s.saveAsTitle}>Name this Inspection</Text>
+                <TouchableOpacity
+                  style={s.saveAsCloseBtn}
+                  onPress={() => navigation.goBack()}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="x" size={20} color={Colors.secondary} />
+                </TouchableOpacity>
+              </View>
               <TextInput
                 ref={newDocNameRef}
                 style={s.saveAsInput}
@@ -721,14 +728,12 @@ export default function InspectionScreen({
                 returnKeyType="done"
                 onSubmitEditing={confirmNewDoc}
               />
-              <View style={s.saveAsActions}>
-                <TouchableOpacity
-                  style={s.saveAsConfirm}
-                  onPress={confirmNewDoc}
-                >
-                  <Text style={s.saveAsConfirmText}>Start Inspection</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={s.startInspectionBtn}
+                onPress={confirmNewDoc}
+              >
+                <Text style={s.saveAsConfirmText}>Start Inspection</Text>
+              </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
         </Modal>
@@ -745,7 +750,7 @@ export default function InspectionScreen({
   }
 
   return (
-    <InspectionProvider initialDoc={initialDoc}>
+    <InspectionProvider initialDoc={initialDoc} schema={schema}>
       <InspectionContent schema={schema} navigation={navigation} />
     </InspectionProvider>
   );
@@ -773,13 +778,16 @@ const s = StyleSheet.create({
   },
   headerCenter: {
     flex: 1,
-    gap: 2,
   },
   headerTitleRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: Spacing.sm,
     flexWrap: "wrap",
+  },
+  headerLeftCol: {
+    flexShrink: 0,
+    gap: Spacing.xs / 2,
   },
   clauseBadge: {
     backgroundColor: Colors.accent,
@@ -829,15 +837,27 @@ const s = StyleSheet.create({
     padding: Spacing.xl,
   },
   saveAsCard: {
+    width: "100%",
     backgroundColor: Colors.surface,
     borderRadius: Radii.lg,
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     gap: Spacing.md,
   },
   saveAsTitle: {
     fontSize: FontSize.lg,
     fontWeight: FontWeight.bold,
     color: Colors.primary,
+  },
+  saveAsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  saveAsCloseBtn: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
   saveAsInput: {
     backgroundColor: Colors.inputBg,
@@ -875,6 +895,12 @@ const s = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: "#FFF",
+  },
+  startInspectionBtn: {
+    paddingVertical: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.accent,
+    alignItems: "center",
   },
 
   // Info modal

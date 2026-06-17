@@ -17,7 +17,12 @@ export type FieldType =
   | 'dropdown'
   | 'signature'
 
-export type SectionType = 'repeatable_section' | 'repeatable_list' | 'repeatable_subsection'
+export type SectionType =
+  | 'repeatable_section'
+  | 'repeatable_list'
+  | 'repeatable_subsection'
+  | 'device_legend'        // renders LegendTable (editable device-type reference table)
+  | 'device_record_list'   // renders DeviceList (per-device records, looked up against the device_legend)
 
 export interface ConditionalOn {
   field: string
@@ -36,10 +41,11 @@ export interface FieldDefinition {
   conditional_on?: ConditionalOn
   hint?: string
   auto_increment?: boolean
-  source?: string
+  source?: string          // profile default key, e.g. "company_profile.name", "tech_profile.cert_number", "location.city"
+  options_source?: string  // dynamic options lookup, e.g. "legend:code" — populates `options` from doc.legend at render time
   group_label?: string     // visual group header rendered before this field within its card
   default?: string         // pre-populated value on new inspection creation
-  computed?: string        // computation key; field is read-only and resolved by the app/PDF generator
+  computed?: string        // computation key; "list_non_empty:<listId>" | "field_non_empty:<fieldId>" | "pdf_page_count"
   source_default?: string  // fieldValues key to copy as the initial value when creating a new list item
   notes?: NoteEntry[]      // explanatory notes rendered below the field
 }
@@ -93,6 +99,7 @@ export interface SectionDefinition {
 export interface InspectionSchema {
   id: string
   title: string
+  formId: string
   version: string
   description: string
   defaults: {

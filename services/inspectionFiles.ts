@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
+import Share from 'react-native-share'
 import * as DocumentPicker from 'expo-document-picker'
 import type { InspectionDocument } from '../types/inspection'
 
@@ -91,14 +92,55 @@ export async function deleteInspection(filePath: string): Promise<void> {
 
 export async function shareInspection(doc: InspectionDocument): Promise<void> {
   // Ensure it's saved to a stable path first
-  const path = await saveInspection(doc)
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(path, {
-      mimeType: 'application/json',
-      dialogTitle: doc.filename,
-      UTI: 'public.json',
-    })
+  await saveInspection(doc)
+  if (!(await Sharing.isAvailableAsync())) return
+
+  // Share a copy under a clean, human-readable name — the saved file's name
+  // includes a `_<id>` suffix that would otherwise show up as the suggested
+  // filename in the share sheet's "Save to Files" dialog.
+  const safeName = (doc.filename || 'Untitled').replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'Untitled'
+  const sharePath = FileSystem.cacheDirectory + safeName + '.json'
+  await FileSystem.writeAsStringAsync(sharePath, JSON.stringify(doc, null, 2), {
+    encoding: FileSystem.EncodingType.UTF8,
+  })
+
+  await Sharing.shareAsync(sharePath, {
+    mimeType: 'application/json',
+    dialogTitle: doc.filename,
+    UTI: 'public.json',
+  })
+}
+
+// Share multiple saved inspection files in a single share sheet (combined
+// AirDrop / Messages attachment, etc.) via react-native-share, which supports
+// an array of file URLs unlike expo-sharing.
+export async function shareInspectionFiles(
+  items: { filePath: string; filename: string }[],
+): Promise<void> {
+  if (items.length === 0) return
+
+  const usedNames = new Set<string>()
+  const urls: string[] = []
+  for (const item of items) {
+    const base = (item.filename || 'Untitled').replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'Untitled'
+    let candidate = base
+    let n = 2
+    while (usedNames.has(candidate)) {
+      candidate = `${base} (${n})`
+      n++
+    }
+    usedNames.add(candidate)
+
+    const sharePath = FileSystem.cacheDirectory + candidate + '.json'
+    await FileSystem.deleteAsync(sharePath, { idempotent: true })
+    await FileSystem.copyAsync({ from: item.filePath, to: sharePath })
+    urls.push(sharePath)
   }
+
+  await Share.open({
+    urls,
+    failOnCancel: false,
+  })
 }
 
 // ─── Import from device (file picker) ────────────────────────────────────────

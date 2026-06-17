@@ -1,9 +1,11 @@
 import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react'
 import type { InspectionDocument, InspectionAction } from '../types/inspection'
+import type { InspectionSchema } from '../schema/types'
 
 interface ContextValue {
   doc: InspectionDocument
   dispatch: Dispatch<InspectionAction>
+  schema: InspectionSchema
 }
 
 const InspectionContext = createContext<ContextValue | null>(null)
@@ -82,12 +84,13 @@ export function inspectionReducer(
 interface ProviderProps {
   children: ReactNode
   initialDoc: InspectionDocument
+  schema: InspectionSchema
 }
 
-export function InspectionProvider({ children, initialDoc }: ProviderProps) {
+export function InspectionProvider({ children, initialDoc, schema }: ProviderProps) {
   const [doc, dispatch] = useReducer(inspectionReducer, initialDoc)
   return (
-    <InspectionContext.Provider value={{ doc, dispatch }}>
+    <InspectionContext.Provider value={{ doc, dispatch, schema }}>
       {children}
     </InspectionContext.Provider>
   )

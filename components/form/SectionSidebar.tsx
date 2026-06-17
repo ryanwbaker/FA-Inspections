@@ -430,7 +430,7 @@ const s = StyleSheet.create({
   // Page row
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: Spacing.lg,
     paddingVertical: 10,
     gap: Spacing.md,

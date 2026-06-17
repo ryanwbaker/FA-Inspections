@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../../tokens";
-import { parseMarkup } from "../primitives/RichText";
+import { FieldLabel } from "../primitives";
 
 export type TriStateVal = "pass" | "fail" | "na" | null;
 
@@ -37,26 +37,17 @@ export default function TriStateField({
     else setInternal(v);
   };
 
-  const segs = parseMarkup(label)
-  const labelIsPlain = segs.every(sg => !sg.bold && !sg.italic && !sg.underline)
-
   return (
     <TouchableOpacity
-      style={[s.row, focused && s.rowFocused]}
+      style={
+        onFocus
+          ? [s.containerFocusable, focused && s.containerFocused]
+          : s.container
+      }
       onPress={onFocus}
       activeOpacity={onFocus ? 0.7 : 1}
     >
-      <Text style={s.label}>
-        {labelIsPlain
-          ? label
-          : segs.map((sg, i) => (
-              <Text key={i} style={[sg.bold && s.bold, sg.italic && s.italic, sg.underline && s.underline]}>
-                {sg.text}
-              </Text>
-            ))
-        }
-        {required && <Text style={s.star}> *</Text>}
-      </Text>
+      <FieldLabel label={label} required={required} />
       <View style={s.buttons}>
         {opts.map((o) => (
           <TouchableOpacity
@@ -84,34 +75,21 @@ export default function TriStateField({
 }
 
 const s = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.sm,
+  container: { marginBottom: Spacing.xs },
+  containerFocusable: {
     marginBottom: Spacing.md,
     padding: Spacing.sm,
     borderRadius: Radii.md,
     borderWidth: 1.5,
     borderColor: "transparent",
   },
-  rowFocused: {
+  containerFocused: {
     borderColor: Colors.accent,
     backgroundColor: Colors.accentSoft,
   },
-  label: {
-    fontSize: FontSize.md,
-    color: Colors.primary,
-    flex: 1,
-    lineHeight: 20,
-  },
-  star: { color: Colors.accent },
-  bold: { fontWeight: "bold" as const },
-  italic: { fontStyle: "italic" as const },
-  underline: { textDecorationLine: "underline" as const },
-  buttons: { flexDirection: "row", gap: 6 },
+  buttons: { flexDirection: "row", gap: Spacing.sm, marginTop: Spacing.xs },
   btn: {
-    width: 40,
+    flex: 1,
     height: 40,
     borderRadius: Radii.md,
     borderWidth: 1.5,

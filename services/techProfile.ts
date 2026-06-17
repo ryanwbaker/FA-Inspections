@@ -35,17 +35,3 @@ export async function saveTechProfile(profile: TechnicianProfile): Promise<void>
     encoding: FileSystem.EncodingType.UTF8,
   })
 }
-
-export const TECH_GROUP_KEY = 's20__0'
-
-export function techToFieldValues(profile: TechnicianProfile): Record<string, string> {
-  const g = TECH_GROUP_KEY
-  return {
-    [`${g}/primary_tech_name`]: profile.name,
-    [`${g}/primary_tech_id`]: profile.certNumber,
-  }
-}
-
-export function techIsPopulated(profile: TechnicianProfile): boolean {
-  return profile.name.trim().length > 0
-}

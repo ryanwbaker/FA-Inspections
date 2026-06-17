@@ -7,6 +7,7 @@ import ItemModal from './ItemModal'
 import type { FieldDefinition } from '../../schema/types'
 import type { StoredListItem } from '../../types/inspection'
 import { useInspection } from '../../context/InspectionContext'
+import { sortLegend, type DeviceLegendEntry } from '../../constants/legend'
 
 const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36)
 
@@ -18,6 +19,19 @@ function makeBlankItem(fields: FieldDefinition[], nextNum: number): Item {
     values[f.id] = f.auto_increment ? String(nextNum) : ''
   })
   return { id: newId(), values }
+}
+
+// Resolves `options_source: "legend:<column>"` into a static `options` array,
+// pulled from the inspection's device legend at render time.
+function resolveOptions(fields: FieldDefinition[], legend: DeviceLegendEntry[]): FieldDefinition[] {
+  return fields.map(f => {
+    if (!f.options_source?.startsWith('legend:')) return f
+    const col = f.options_source.slice('legend:'.length) as keyof DeviceLegendEntry
+    const options = sortLegend(legend)
+      .map(e => e[col])
+      .filter((v): v is string => typeof v === 'string' && v.length > 0)
+    return { ...f, options }
+  })
 }
 
 // ─── Summary row helpers ──────────────────────────────────────────────────────
@@ -58,14 +72,16 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
   const [editing, setEditing] = useState<{ item: Item; isNew: boolean } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-  const autoIncrField = itemFields.find(f => f.auto_increment)
+  const resolvedFields = resolveOptions(itemFields, doc.legend)
+
+  const autoIncrField = resolvedFields.find(f => f.auto_increment)
   const nextNum = autoIncrField
     ? Math.max(0, ...items.map(it => parseInt(it.values[autoIncrField.id] || '0', 10))) + 1
     : items.length + 1
 
   const openNew = () => {
-    const item = makeBlankItem(itemFields, nextNum)
-    itemFields.forEach(f => {
+    const item = makeBlankItem(resolvedFields, nextNum)
+    resolvedFields.forEach(f => {
       if (f.source_default) {
         const v = doc.fieldValues[f.source_default]
         if (v) item.values[f.id] = v
@@ -95,7 +111,7 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
       )}
 
       {items.map((item, i) => {
-        const { badge, title, subtitle } = summaryFor(item, itemFields, i)
+        const { badge, title, subtitle } = summaryFor(item, resolvedFields, i)
         return (
           <TouchableOpacity
             key={item.id}
@@ -132,7 +148,7 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
 
       {editing && (
         <ItemModal
-          fields={itemFields}
+          fields={resolvedFields}
           values={editing.item.values}
           isNew={editing.isNew}
           onUpdate={values => setEditing(prev => prev ? { ...prev, item: { ...prev.item, values } } : null)}
