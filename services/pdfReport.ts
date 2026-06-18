@@ -274,9 +274,19 @@ export async function exportInspectionPdf(html: string, filename: string): Promi
   // Dynamic require so TS doesn't error before expo-print is installed
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Print = require('expo-print') as {
-    printToFileAsync: (opts: { html: string; base64?: boolean }) => Promise<{ uri: string }>
+    printToFileAsync: (opts: {
+      html: string
+      base64?: boolean
+      margins?: { top: number; right: number; bottom: number; left: number }
+    }) => Promise<{ uri: string }>
   }
-  const { uri } = await Print.printToFileAsync({ html, base64: false })
+  // Top margin = 50pt (~0.7in) so the native content area starts below the 32pt running header.
+  // Right/left = 47pt (0.65in). Bottom = 36pt (0.5in) for the footer.
+  const { uri } = await Print.printToFileAsync({
+    html,
+    base64: false,
+    margins: { top: 50, right: 47, bottom: 36, left: 47 },
+  })
   const safeName = (filename || 'Inspection Report').replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'report'
   const dest = FileSystem.cacheDirectory + safeName + '.pdf'
   await FileSystem.deleteAsync(dest, { idempotent: true })
