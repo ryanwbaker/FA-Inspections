@@ -16,6 +16,7 @@ export type FieldType =
   | 'multi_checkbox'
   | 'dropdown'
   | 'signature'
+  | 'image'
 
 export type SectionType =
   | 'repeatable_section'
@@ -50,6 +51,7 @@ export interface FieldDefinition {
   computed?: string        // computation key; "list_non_empty:<listId>" | "field_non_empty:<fieldId>" | "pdf_page_count"
   source_default?: string  // fieldValues key to copy as the initial value when creating a new list item
   notes?: NoteEntry[]      // explanatory notes rendered below the field
+  pdf_hidden?: boolean     // if true, field is shown in the mobile form but omitted from the PDF field grid
 }
 
 export interface NoteEntry {
@@ -71,6 +73,7 @@ export interface SubsectionDefinition {
   type?: SectionType
   fields?: FieldDefinition[]
   item_fields?: FieldDefinition[]
+  instance_label_field?: string  // item_field id to use as the entry title in the list
   notes_before?: NoteEntry[]
   notes_after?: NoteEntry[]
   mobile_note?: string
@@ -88,9 +91,10 @@ export interface SectionDefinition {
   fields?: FieldDefinition[]
   subsections?: SubsectionDefinition[]
   item_fields?: FieldDefinition[]
+  instance_label?: string
+  instance_label_field?: string  // item_field id to use as the entry title in the list
   notes_before?: NoteEntry[]
   notes_after?: NoteEntry[]
-  instance_label?: string
   applicable_toggle?: ApplicableToggle
   mobile_note?: string
   clause?: string

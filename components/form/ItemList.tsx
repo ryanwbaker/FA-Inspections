@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
 import { Feather } from '@expo/vector-icons'
 import { Colors, FontSize, FontWeight, Spacing, Radii } from '../../tokens'
 import { ConfirmModal } from '../primitives'
@@ -101,13 +101,15 @@ function secondaryField(fields: FieldDefinition[], skip: FieldDefinition | undef
   return fields.find(f => !f.auto_increment && f !== skip && (f.type === 'string' || f.type === 'date'))
 }
 
-function summaryFor(item: Item, fields: FieldDefinition[], index: number) {
+function summaryFor(item: Item, fields: FieldDefinition[], index: number, instanceLabelField?: string) {
   const autoField = fields.find(f => f.auto_increment)
   const badge = autoField ? (item.values[autoField.id] || String(index + 1)) : String(index + 1)
 
-  const pf = primaryField(fields)
+  const pf = instanceLabelField
+    ? (fields.find(f => f.id === instanceLabelField) ?? primaryField(fields))
+    : primaryField(fields)
   const sf = secondaryField(fields, pf)
-  const title = pf ? (item.values[pf.id] || 'New Entry') : 'New Entry'
+  const title = pf ? (item.values[pf.id] || '—') : '—'
   const subtitle = sf ? item.values[sf.id] : undefined
 
   return { badge, title, subtitle }
@@ -119,15 +121,17 @@ interface Props {
   itemFields: FieldDefinition[]
   groupKey: string
   targetId: string
+  instanceLabelField?: string
 }
 
-export default function ItemList({ itemFields, groupKey, targetId }: Props) {
+export default function ItemList({ itemFields, groupKey, targetId, instanceLabelField }: Props) {
   const { doc, dispatch, schema } = useInspection()
   const ctxKey = `${groupKey}/${targetId}`
   const items = doc.listItems[ctxKey] ?? []
   const setItems = (next: Item[]) => dispatch({ type: 'SET_LIST_ITEMS', key: ctxKey, items: next })
   const [editing, setEditing] = useState<{ item: Item; isNew: boolean } | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [searchText, setSearchText] = useState('')
 
   const resolvedFields = resolveOptions(itemFields, doc.legend, schema)
 
@@ -161,14 +165,37 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
     setEditing(null)
   }
 
+  const labelFieldId = instanceLabelField ?? primaryField(resolvedFields)?.id
+  const filteredItems = searchText.trim()
+    ? items.filter(item => {
+        const titleVal = labelFieldId ? item.values[labelFieldId] ?? '' : ''
+        return titleVal.toLowerCase().includes(searchText.toLowerCase())
+      })
+    : items
+
   return (
     <View>
-      {items.length === 0 && (
+      {items.length > 3 && (
+        <TextInput
+          style={s.search}
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Search…"
+          placeholderTextColor={Colors.secondary}
+          clearButtonMode="while-editing"
+        />
+      )}
+
+      {filteredItems.length === 0 && items.length === 0 && (
         <Text style={s.empty}>No entries yet. Tap below to add one.</Text>
       )}
 
-      {items.map((item, i) => {
-        const { badge, title, subtitle } = summaryFor(item, resolvedFields, i)
+      {filteredItems.length === 0 && items.length > 0 && (
+        <Text style={s.empty}>No entries match "{searchText}"</Text>
+      )}
+
+      {filteredItems.map((item, i) => {
+        const { badge, title, subtitle } = summaryFor(item, resolvedFields, i, instanceLabelField)
         return (
           <TouchableOpacity
             key={item.id}
@@ -231,6 +258,17 @@ export default function ItemList({ itemFields, groupKey, targetId }: Props) {
 }
 
 const s = StyleSheet.create({
+  search: {
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSize.md,
+    color: Colors.primary,
+    marginBottom: Spacing.sm,
+  },
   empty: {
     fontSize: FontSize.sm,
     color: Colors.secondary,

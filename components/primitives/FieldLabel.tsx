@@ -1,11 +1,6 @@
-import { Text, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { Colors, FontSize, FontWeight } from "../../tokens";
-
-// Strip HTML tags from schema labels — italic/bold markup is for PDF output only.
-// A single flat <Text> avoids Fabric's nested-Text height-measurement bug.
-function stripMarkup(s: string): string {
-  return s.replace(/<\/?[a-z][^>]*>/gi, '')
-}
+import RichText from "./RichText";
 
 interface Props {
   label: string;
@@ -14,9 +9,7 @@ interface Props {
 
 export default function FieldLabel({ label, required }: Props) {
   return (
-    <Text style={s.label}>
-      {stripMarkup(label)}{required ? ' *' : ''}
-    </Text>
+    <RichText text={label + (required ? ' *' : '')} style={s.label} />
   );
 }
 

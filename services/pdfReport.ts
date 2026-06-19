@@ -75,6 +75,11 @@ function renderFieldValue(
         ? `<img class="signature-img" src="${raw}" alt="Signature" />`
         : `<span class="empty">Not signed</span>`
 
+    case 'image':
+      return raw
+        ? `<img class="field-image" src="${raw}" alt="${h(field.label)}" />`
+        : `<span class="empty">—</span>`
+
     default:
       return raw ? h(raw) : `<span class="empty">—</span>`
   }
@@ -86,7 +91,9 @@ function renderNotes(notes: { label: string; group_label?: string }[]): string {
   if (!notes || notes.length === 0) return ''
   return notes.map((n) => {
     const gl = n.group_label ? `<div class="note-group-label">${n.group_label}</div>` : ''
-    return `${gl}<p class="note-text">${n.label}</p>`
+    // Convert section cross-references to styled spans (no live navigation in PDF)
+    const label = n.label.replace(/<a\s+ref="[^"]*">([^<]*)<\/a>/g, '<span class="note-link">$1</span>')
+    return `${gl}<p class="note-text">${label}</p>`
   }).join('')
 }
 
@@ -102,6 +109,7 @@ function renderFieldGrid(
   const visible = fields.filter((f) =>
     f.type !== 'note' &&
     f.type !== 'label' &&
+    !f.pdf_hidden &&
     fieldMeetsCondition(f, doc.fieldValues, groupKey)
   )
   if (visible.length === 0) return ''
@@ -246,16 +254,18 @@ export function generateReportHtml(
   doc: InspectionDocument,
   schema: InspectionSchema,
   profile: CompanyProfile,
-  logoDataUri: string | null,
 ): string {
   const generate = getTemplate(schema.template ?? schema.id)
-  return generate(doc, schema, profile, logoDataUri)
+  return generate(doc, schema, profile)
 }
 
 // ─── Logo helper ──────────────────────────────────────────────────────────────
 
 export async function logoToDataUri(logoUri: string | null): Promise<string | null> {
   if (!logoUri) return null
+  // New format: logo stored as data URI directly in profile (survives reinstalls)
+  if (logoUri.startsWith('data:')) return logoUri
+  // Legacy format: absolute file path — try to read it
   try {
     const base64 = await FileSystem.readAsStringAsync(logoUri, {
       encoding: FileSystem.EncodingType.Base64,

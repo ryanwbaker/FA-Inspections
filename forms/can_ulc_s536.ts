@@ -3,6 +3,7 @@ import type { InspectionSchema, SectionDefinition, SubsectionDefinition } from '
 import type { CompanyProfile } from '../services/companyProfile'
 import { buildPagesFromDocument } from '../services/formPages'
 import { h, renderSectionContent } from '../services/pdfReport'
+import { findFieldBySource } from '../services/schemaDefaults'
 
 const C = {
   pass: '#389E0D', passSoft: '#F6FFED',
@@ -61,7 +62,8 @@ export function buildCss(): string {
 
     /* ── Section layout ── */
     .page-section { margin-bottom: 16px; }
-    .landscape-section { page: landscape-page; page-break-before: always; page-break-after: always; }
+    /* landscape-section: no extra page-break rules — the pdf-page div structure handles paging */
+    .landscape-section { }
     .section-heading {
       display: flex; align-items: center; gap: 7px;
       border-bottom: 1px solid ${C.border}; padding-bottom: 6px; margin-bottom: 8px;
@@ -101,6 +103,7 @@ export function buildCss(): string {
     .center { text-align: center; }
     .note-text { font-size: 8.5px; color: ${C.secondary}; font-style: italic; margin-bottom: 5px; }
     .note-group-label { font-size: 8px; font-weight: 700; text-transform: uppercase; color: ${C.secondary}; margin-top: 6px; }
+    .note-link { color: ${C.accent}; text-decoration: underline; font-style: normal; }
     .signature-img { max-width: 200px; max-height: 80px; border: 1px solid ${C.border}; border-radius: 3px; }
   `
 }
@@ -109,10 +112,15 @@ export function generate(
   doc: InspectionDocument,
   schema: InspectionSchema,
   profile: CompanyProfile,
-  logoDataUri: string | null,
 ): string {
   const pages = buildPagesFromDocument(schema, doc.repeatableGroups, doc.applicableStates)
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  // Resolve logo from fieldValues (company_logo image field), fall back to profile
+  const logoRef = findFieldBySource(schema, 'company_profile.logoUri')
+  const logoDataUri = logoRef
+    ? (doc.fieldValues[`${logoRef.groupKey}/${logoRef.fieldId}`] ?? profile.logoUri ?? null)
+    : (profile.logoUri ?? null)
 
   // Cover — logo ABOVE title
   const logoHtml = logoDataUri ? `<img class="logo" src="${logoDataUri}" alt="Company Logo" />` : ''
@@ -163,27 +171,19 @@ export function generate(
     <span>${today}</span>`
 
   // ── Pagination script ─────────────────────────────────────────────────────
-  // Runs in WKWebView on window.load before printToFileAsync converts to PDF.
-  // Strategy:
-  //   1. Derive CSS-px → print-pt scale from body width vs known content width
-  //   2. Cover content occupies the top of page 1 (no header); §20.1 follows on same page
-  //   3. Split sections at the ROW level so each .pdf-page div = exactly 1 physical page
-  //   4. When a section overflows, repeat its heading with "(continued)" on the next page
-  //   5. Group-label rows are kept with the rows that follow them
   const script = `
 <script>
 (function () {
   window.addEventListener('load', function () {
-    // ── Dimensions ──────────────────────────────────────────────────────────
-    var PRINT_W  = 518;   // pt = 8.5in - (47+47)pt native side margins
-    var PRINT_H  = 706;   // pt = 11in  - (50+36)pt native top/bottom margins
-    var HDR_PT   = 44;    // header strip height in pt
-    var FTR_PT   = 36;    // footer strip height in pt
-    var AVAIL_PT = PRINT_H - HDR_PT - FTR_PT; // content per page (pages 2+)
+    var PRINT_W  = 518;
+    var PRINT_H  = 706;
+    var HDR_PT   = 44;
+    var FTR_PT   = 36;
+    var AVAIL_PT = PRINT_H - HDR_PT - FTR_PT;
 
     var bodyW = document.body.getBoundingClientRect().width || PRINT_W;
-    var scale = PRINT_W / bodyW;                // pt per CSS px
-    var pageHpx  = PRINT_H / scale;             // full content-area height in CSS px
+    var scale = PRINT_W / bodyW;
+    var pageHpx  = PRINT_H / scale;
     var hdrHpx   = HDR_PT  / scale;
     var ftrHpx   = FTR_PT  / scale;
     var availHpx = AVAIL_PT / scale;
@@ -220,193 +220,179 @@ export function generate(
     // Each item: { kind:'cover'|'section-open'|'rows'|'block', ... }
     // We will bin these into pages respecting height.
 
-    function h(px) { return px + 4; } // small buffer per item
+    function buf(px) { return px + 4; } // small measurement buffer
 
     var items = [];
 
     // Cover
     var coverEl = document.querySelector('.cover-content');
     if (coverEl) {
-      items.push({ kind: 'cover', el: coverEl, height: h(coverEl.getBoundingClientRect().height) });
+      items.push({ kind: 'cover', el: coverEl, height: buf(coverEl.getBoundingClientRect().height) });
     }
 
     // Sections
     var sections = Array.prototype.slice.call(document.querySelectorAll('.page-section'));
     sections.forEach(function (sec) {
+      // FIX: Only classify as landscape if there are actual data rows — empty
+      // repeatable_list sections (§20.2(1), §20.4) should render as normal blocks.
       var isLandscape = sec.dataset.landscape === 'true';
-      var clauseTxt   = sec.dataset.clause || '';
-      var titleTxt    = sec.dataset.title  || '';
-      var headingEl   = sec.querySelector('.section-heading');
-      var headingH    = headingEl ? h(headingEl.getBoundingClientRect().height) : 0;
-
-      function headingItem(isContinued) {
-        return {
-          kind: 'heading',
-          clauseTxt: clauseTxt,
-          titleTxt: titleTxt,
-          isContinued: isContinued,
-          height: headingH
-        };
+      if (isLandscape) {
+        var hasRows = sec.querySelector('tbody tr') || sec.querySelector('.empty');
+        // If no rows AND no actual content (just "No entries"), render as normal block
+        var dataRows = sec.querySelectorAll('tbody tr');
+        if (dataRows.length === 0) isLandscape = false;
       }
 
+      var clauseTxt = sec.dataset.clause || '';
+      var titleTxt  = sec.dataset.title  || '';
+      var headingEl = sec.querySelector('.section-heading');
+      var headingH  = headingEl ? buf(headingEl.getBoundingClientRect().height) : 0;
+
       if (isLandscape) {
-        items.push({ kind: 'landscape', el: sec, height: sec.getBoundingClientRect().height });
+        // Landscape sections get their own page bin (no CSS page-break tricks needed)
+        items.push({ kind: 'landscape', el: sec, clauseTxt: clauseTxt, titleTxt: titleTxt,
+                     height: buf(sec.getBoundingClientRect().height) });
         return;
       }
 
-      // Push the section heading
-      items.push(headingItem(false));
+      // Push section heading as its own item
+      items.push({ kind: 'heading', clauseTxt: clauseTxt, titleTxt: titleTxt,
+                   isContinued: false, height: headingH });
 
-      // Get content children (everything after the heading)
       var children = Array.prototype.slice.call(sec.children).filter(function (c) {
         return !c.classList.contains('section-heading');
       });
-
-      // Try to extract individual rows from field-table
       var fieldTable = sec.querySelector('table.field-table');
       var dataTable  = sec.querySelector('table.data-table');
 
       if (fieldTable) {
         var rows = Array.prototype.slice.call(fieldTable.querySelectorAll('tr'));
-        // Group rows: keep group-header row with the rows that follow until next group-header
         var i = 0;
         while (i < rows.length) {
           var row = rows[i];
           var isGroupHdr = !!row.querySelector('.group-header');
           if (isGroupHdr) {
-            // Keep group-header with following non-group rows
             var groupRows = [row];
-            var groupH = h(row.getBoundingClientRect().height);
+            var groupH = buf(row.getBoundingClientRect().height);
             i++;
             while (i < rows.length && !rows[i].querySelector('.group-header')) {
               groupRows.push(rows[i]);
-              groupH += h(rows[i].getBoundingClientRect().height);
+              groupH += buf(rows[i].getBoundingClientRect().height);
               i++;
             }
-            items.push({
-              kind: 'table-rows',
-              rows: groupRows,
-              tableClass: fieldTable.className,
-              tableTag: 'table',
-              clauseTxt: clauseTxt,
-              titleTxt: titleTxt,
-              height: groupH
-            });
+            items.push({ kind: 'table-rows', rows: groupRows,
+                         tableClass: fieldTable.className, tableTag: 'table',
+                         clauseTxt: clauseTxt, titleTxt: titleTxt, height: groupH });
           } else {
-            items.push({
-              kind: 'table-rows',
-              rows: [row],
-              tableClass: fieldTable.className,
-              tableTag: 'table',
-              clauseTxt: clauseTxt,
-              titleTxt: titleTxt,
-              height: h(row.getBoundingClientRect().height)
-            });
+            items.push({ kind: 'table-rows', rows: [row],
+                         tableClass: fieldTable.className, tableTag: 'table',
+                         clauseTxt: clauseTxt, titleTxt: titleTxt,
+                         height: buf(row.getBoundingClientRect().height) });
             i++;
           }
         }
       } else if (dataTable) {
         var thead = dataTable.querySelector('thead');
-        var theadH = thead ? h(thead.getBoundingClientRect().height) : 0;
-        var bodyRows = Array.prototype.slice.call(dataTable.querySelectorAll('tbody tr'));
-        // Push thead as first item (sticky-ish: repeat on each page chunk)
+        var theadH = thead ? buf(thead.getBoundingClientRect().height) : 0;
         if (thead) {
-          items.push({
-            kind: 'table-thead',
-            el: thead,
-            tableClass: dataTable.className,
-            clauseTxt: clauseTxt,
-            titleTxt: titleTxt,
-            height: theadH
-          });
+          items.push({ kind: 'table-thead', el: thead, tableClass: dataTable.className,
+                       clauseTxt: clauseTxt, titleTxt: titleTxt, height: theadH });
         }
-        bodyRows.forEach(function (row) {
-          items.push({
-            kind: 'table-rows',
-            rows: [row],
-            tableClass: dataTable.className,
-            tableTag: 'table',
-            clauseTxt: clauseTxt,
-            titleTxt: titleTxt,
-            height: h(row.getBoundingClientRect().height)
-          });
+        Array.prototype.slice.call(dataTable.querySelectorAll('tbody tr')).forEach(function (row) {
+          items.push({ kind: 'table-rows', rows: [row], tableClass: dataTable.className,
+                       tableTag: 'table', clauseTxt: clauseTxt, titleTxt: titleTxt,
+                       height: buf(row.getBoundingClientRect().height) });
         });
       } else {
-        // Block content (na-card, notes, etc.)
         children.forEach(function (child) {
-          items.push({
-            kind: 'block',
-            el: child,
-            clauseTxt: clauseTxt,
-            titleTxt: titleTxt,
-            height: h(child.getBoundingClientRect().height)
-          });
+          items.push({ kind: 'block', el: child, clauseTxt: clauseTxt, titleTxt: titleTxt,
+                       height: buf(child.getBoundingClientRect().height) });
         });
       }
     });
 
     // ── Bin items into pages ─────────────────────────────────────────────────
-    // Page 1: no header; available = pageHpx - ftrHpx
-    // Pages 2+: header + footer; available = availHpx
-
-    var pageBins = []; // each bin: array of items
-
+    var pageBins = [];
     var currentBin = [];
     var currentH   = 0;
     var isFirstPage = true;
-    var lastSectionKey = ''; // track when section changes for heading repeat
 
     function pageAvail() { return isFirstPage ? (pageHpx - ftrHpx) : availHpx; }
 
     function flushPage() {
       pageBins.push({ items: currentBin, isFirstPage: isFirstPage });
-      currentBin = [];
-      currentH   = 0;
-      isFirstPage = false;
+      currentBin = []; currentH = 0; isFirstPage = false;
     }
 
-    function addItem(item) {
-      currentBin.push(item);
-      currentH += item.height;
-    }
+    function addItem(item) { currentBin.push(item); currentH += item.height; }
 
     items.forEach(function (item) {
+      // FIX: landscape sections get exactly one clean page — no double-flush empty bin
       if (item.kind === 'landscape') {
-        if (currentH > 0) flushPage();
-        flushPage(); // own page with just the landscape section
-        // Put landscape section in its own bin
-        pageBins[pageBins.length - 1].items = [item];
-        pageBins[pageBins.length - 1].isLandscape = true;
+        if (currentH > 0) flushPage();      // flush pending content
+        // Create landscape bin directly (no second flushPage call that created empty bins)
+        pageBins.push({ items: [item], isFirstPage: false, isLandscape: true });
+        currentBin = []; currentH = 0;
         return;
       }
 
       var avail = pageAvail();
 
-      // Does item fit?
       if (currentH + item.height > avail && currentH > 0) {
-        // Before flushing, if next item is a table-rows and we're mid-section,
-        // we'll need to re-add a heading "(continued)" on the new page.
-        // We handle that below after the flush.
-        var prevSectionKey = (currentBin.length > 0 && currentBin[currentBin.length - 1].clauseTxt !== undefined)
-          ? (currentBin[currentBin.length - 1].clauseTxt + currentBin[currentBin.length - 1].titleTxt)
+        var prevKey = currentBin.length > 0
+          ? ((currentBin[currentBin.length - 1].clauseTxt || '') +
+             (currentBin[currentBin.length - 1].titleTxt  || ''))
           : '';
         flushPage();
-        // If we're continuing within the same section, add a "(continued)" heading
-        var newKey = item.clauseTxt !== undefined ? (item.clauseTxt + item.titleTxt) : '';
-        if (newKey && newKey === prevSectionKey && item.kind !== 'heading') {
-          var contHeading = {
-            kind: 'heading',
-            clauseTxt: item.clauseTxt,
-            titleTxt: item.titleTxt,
-            isContinued: true,
-            height: 32 / scale  // estimated heading height on new page
-          };
-          addItem(contHeading);
+        var newKey = (item.clauseTxt || '') + (item.titleTxt || '');
+        // FIX: Add "(continued)" heading only when not already a heading
+        if (newKey && newKey === prevKey && item.kind !== 'heading') {
+          addItem({ kind: 'heading', clauseTxt: item.clauseTxt, titleTxt: item.titleTxt,
+                    isContinued: true, height: 32 / scale });
         }
       }
       addItem(item);
     });
+
     if (currentBin.length > 0) flushPage();
+
+    // FIX: Resolve orphan headings in two steps.
+    //
+    // Step 1 — move lone headings forward.
+    // If a bin's last item is a heading with no content following it, pop the
+    // heading and prepend it to the next bin.  Two sub-cases:
+    //   a) The next bin already starts with a heading for the SAME section
+    //      (placed there earlier by the flush-and-continue "(continued)" logic).
+    //      → Replace that duplicate heading with the fresh one (no "(continued)").
+    //   b) Otherwise, simply unshift the heading onto the next bin.
+    //
+    // Step 2 — drop bins that became empty after Step 1.
+    // Without Step 2, popping the only item from a bin leaves a blank page that
+    // still renders (with just header + footer and no content).
+
+    for (var bi = 0; bi < pageBins.length - 1; bi++) {
+      var bin = pageBins[bi];
+      if (bin.items.length > 0 && bin.items[bin.items.length - 1].kind === 'heading') {
+        var orphan = bin.items.pop();
+        orphan.isContinued = false;
+        var nextBin = pageBins[bi + 1];
+        var firstOfNext = nextBin.items[0];
+        if (firstOfNext && firstOfNext.kind === 'heading' &&
+            firstOfNext.clauseTxt === orphan.clauseTxt &&
+            firstOfNext.titleTxt  === orphan.titleTxt) {
+          // Next bin already has a heading for this same section — replace it
+          // so we don't show two headings back-to-back on the same page.
+          nextBin.items[0] = orphan;
+        } else {
+          nextBin.items.unshift(orphan);
+        }
+        // bin may now be empty — Step 2 will drop it.
+      }
+    }
+
+    // Step 2: remove bins that are now empty (no items left after Step 1 moved
+    // their lone heading out).
+    pageBins = pageBins.filter(function (b) { return b.items.length > 0; });
 
     var totalPages = pageBins.length;
 

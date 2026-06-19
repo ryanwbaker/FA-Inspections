@@ -80,5 +80,7 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>FA Inspections uses your photo library to attach company logos and images to inspection reports.</string>
   </dict>
 </plist>

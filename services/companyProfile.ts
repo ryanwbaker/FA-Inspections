@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy'
-import * as DocumentPicker from 'expo-document-picker'
 import type { InspectionSchema } from '../form_schema/types'
 import { findFieldBySource } from './schemaDefaults'
+import { pickImageAsDataUri } from './imagePicker'
 
 const DIR = FileSystem.documentDirectory + 'settings/'
 const PROFILE_PATH = DIR + 'profile.json'
@@ -46,17 +46,7 @@ export async function saveProfile(profile: CompanyProfile): Promise<void> {
 }
 
 export async function pickAndSaveLogo(): Promise<string | null> {
-  const result = await DocumentPicker.getDocumentAsync({
-    type: 'image/*',
-    copyToCacheDirectory: true,
-  })
-  if (result.canceled || !result.assets?.[0]) return null
-  const asset = result.assets[0]
-  await ensureDir()
-  const ext = (asset.name?.split('.').pop() ?? 'png').toLowerCase()
-  const dest = DIR + 'logo.' + ext
-  await FileSystem.copyAsync({ from: asset.uri, to: dest })
-  return dest
+  return pickImageAsDataUri()
 }
 
 // ─── Helpers for InspectionScreen ────────────────────────────────────────────

@@ -105,7 +105,7 @@ function SectionContent({ target, groupKey, legend, onLegendChange, prefixNotesB
       <View>
         {notesBefore.length > 0 && <Notes notes={notesBefore} />}
         {target.item_fields
-          ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} />
+          ? <ItemList groupKey={groupKey} targetId={target.id} itemFields={target.item_fields} instanceLabelField={target.instance_label_field} />
           : null
         }
         {notesAfter.length > 0 && <View style={s.notesAfter}><Notes notes={notesAfter} /></View>}

@@ -20,7 +20,6 @@ export type TemplateGenerateFn = (
   doc: InspectionDocument,
   schema: InspectionSchema,
   profile: CompanyProfile,
-  logoDataUri: string | null,
 ) => string
 
 const registry: Record<string, TemplateGenerateFn> = {

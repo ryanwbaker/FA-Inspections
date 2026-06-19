@@ -30,6 +30,15 @@
           "title": "Fire Alarm Annual Test and Inspection Report",
           "fields": [
             {
+              "id": "company_logo",
+              "label": "Company Logo",
+              "type": "image",
+              "required": false,
+              "source": "company_profile.logoUri",
+              "group_label": "Company Logo",
+              "pdf_hidden": true
+            },
+            {
               "id": "work_order_number",
               "label": "Work Order Number",
               "type": "string"
@@ -165,11 +174,7 @@
               "id": "sum_deficiencies_corrected_date",
               "label": "As of the following date (YYYY-MM-DD) all <i>Deficiencies</i> have been corrected:",
               "type": "date",
-              "required": false,
-              "conditional_on": {
-                "field": "sum_deficiencies_found",
-                "value": "Yes"
-              }
+              "required": false
             },
             {
               "id": "sum_recommendations_found",
@@ -181,7 +186,7 @@
               "id": "primary_tech_name",
               "label": "Printed Name of Person Responsible",
               "type": "string",
-              "group_label": "Person Responsible",
+              "group_label": "The following person is responsible for ensuring that the information contained in this Test and Inspection Report is correct and complete.",
               "source": "tech_profile.name"
             },
             {
@@ -226,7 +231,7 @@
             },
             {
               "id": "secondary_tech_company",
-              "label": "Company",
+              "label": "Company Conducting Test",
               "type": "string",
               "required": false,
               "conditional_on": {
@@ -236,7 +241,7 @@
             },
             {
               "id": "secondary_tech_phone",
-              "label": "Company Telephone",
+              "label": "Company Phone Number",
               "type": "phone",
               "required": false,
               "conditional_on": {
@@ -294,6 +299,7 @@
           "id": "s20_2_deficiencies",
           "title": "Deficiencies",
           "type": "repeatable_list",
+          "instance_label_field": "def_description",
           "info_text": "The Inspection and Testing of any corrections/repairs of deficiencies noted on this form has been completed by qualified personnel in the column marked 'Technician Name & Certificate No.'",
           "item_fields": [
             {
@@ -408,6 +414,7 @@
       "description": "Required log of every site visit during the inspection period.",
       "info_text": "NOTE: See Section 7.4 of CAN/ULC-S536:REV1",
       "type": "repeatable_list",
+      "notes_before": [{"label": "NOTE: See 7.4"}],
       "item_fields": [
         {
           "id": "attn_date",
@@ -555,6 +562,7 @@
       "clause": "22",
       "title": "Control Unit or Transponder Test Record",
       "description": "Repeatable section — complete for each control unit or transponder on the system.",
+      "notes_before": [{"label": "NOTE 1: See 8.2."},{"label":"NOTE 2: Complete section for each <i>control unit</i> or <i>transponder</i>."}],
       "subsections": [
         {
           "id": "s22_0",
@@ -589,26 +597,34 @@
             }]},
             {"id": "s22_1",
           "clause": "22.1",
-          "title": "Control Unit or Transponder Inspection Record",
-          "fields": [
+          "title": "Control Unit or Transponder Inspection",
+          "notes_before": [
+                {
+                  "label": "NOTE 1: See 8.2."
+                },
+                {
+                  "label": "NOTE 2: Complete section for each <i>control unit</i> or <i>transponder</i>."
+                }
+              ],
+            "fields": [
             {
               "id": "cu_field_location",
-              "label": "Field Location",
+              "label": "<i>Control Unit</i> or <i>Transponder</i> Location",
               "type": "string"
             },
             {
               "id": "cu_identification",
-              "label": "Control Unit / Transponder ID",
+              "label": "<i>Control Unit</i> or <i>Transponder</i> identification",
               "type": "string"
             },
             {
               "id": "cu_A",
-              "label": "A — Input circuit designations correctly identified in relation to connected field devices.",
+              "label": "A — <i>Input circuit</i> designations correctly identified in relation to connected <i>field devices</i>.",
               "type": "tri_state"
             },
             {
               "id": "cu_B",
-              "label": "B — Output circuit designations correctly identified in relation to field devices.",
+              "label": "B — <i>Output circuit</i> designations correctly identified in relation to <i>field devices</i>.",
               "type": "tri_state"
             },
             {
@@ -630,7 +646,8 @@
               "id": "cu_F_fw_date",
               "label": "F — Firmware Date",
               "type": "date",
-              "required": false
+              "required": false,
+              "group_label": "(i) Record the date, revision, and version of the <i>firmware</i>."
             },
             {
               "id": "cu_F_fw_rev",
@@ -648,7 +665,8 @@
               "id": "cu_F_sw_date",
               "label": "F — Software Date",
               "type": "date",
-              "required": false
+              "required": false,
+              "group_label": "(ii) Record the date, revision, and version of the <i>software program</i>"
             },
             {
               "id": "cu_F_sw_rev",
@@ -669,17 +687,17 @@
             },
             {
               "id": "cu_H",
-              "label": "H — Fuses in accordance with manufacturer's specification.",
+              "label": "H — Fuses in accordance with manufacturer's <i>specification</i>.",
               "type": "tri_state"
             },
             {
               "id": "cu_I",
-              "label": "I — Control unit or transponder lock functional.",
+              "label": "I — <i>Control unit</i> or <i>transponder lock</i> functional.",
               "type": "tri_state"
             },
             {
               "id": "cu_J",
-              "label": "J — Termination points from wiring to field devices secure.",
+              "label": "J — Termination points from wiring to <i>field devices</i> secure.",
               "type": "tri_state"
             }
           ],
@@ -695,9 +713,20 @@
         {
           "id": "s22_2",
           "clause": "22.2",
-          "title": "Control Unit or Transponder Functional Test",
+          "title": "Control Unit or Transponder Test",
           "reference": "Clause 8.3",
+          "notes_before": [{"label": "NOTE 1: See 8.2."},{"label":"NOTE 2: Complete section for each <i>control unit</i> or <i>transponder</i>."}],
           "fields": [
+            {
+              "id": "cu_test_location",
+              "label": "<i>Control Unit</i> or <i>Transponder</i> Location",
+              "type": "string"
+            },
+            {
+              "id": "cu_test_identification",
+              "label": "<i>Control Unit</i> or <i>Transponder</i> identification",
+              "type": "string"
+            },
             {
               "id": "cu2_A",
               "label": "A — Power 'on' visual indicator operates.",

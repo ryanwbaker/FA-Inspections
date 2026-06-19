@@ -28,6 +28,7 @@ import {
   InspectionProvider,
   useInspection,
 } from "../context/InspectionContext";
+import { SectionNavigationProvider } from "../context/SectionNavigationContext";
 import {
   saveInspection,
   saveInspectionAs,
@@ -46,7 +47,7 @@ import {
   type FormPage,
   buildPagesFromDocument,
 } from "../services/formPages";
-import { generateReportHtml, logoToDataUri } from "../services/pdfReport";
+import { generateReportHtml } from "../services/pdfReport";
 
 export type { FormPage };
 
@@ -167,6 +168,13 @@ function InspectionContent({ schema, navigation }: ContentProps) {
     if (idx !== -1) goToPage(idx);
   };
 
+  const handleNavigateBySectionId = (sectionId: string) => {
+    const idx = pages.findIndex(
+      (p) => p.sectionId === sectionId || p.subsectionId === sectionId
+    );
+    if (idx !== -1) goToPage(idx);
+  };
+
   const handleAddGroup = (sectionId: string) => {
     const groupKey = `${sectionId}__${Date.now()}`;
     dispatch({ type: "ADD_GROUP", sectionId, groupKey });
@@ -255,6 +263,7 @@ function InspectionContent({ schema, navigation }: ContentProps) {
           : "";
 
   return (
+    <SectionNavigationProvider value={{ navigateTo: handleNavigateBySectionId }}>
     <SafeAreaView style={s.safe}>
       {/* Header */}
       <View style={s.header}>
@@ -382,8 +391,7 @@ function InspectionContent({ schema, navigation }: ContentProps) {
         onExportPdf={async () => {
           setSidebarOpen(false);
           const profile = await loadProfile();
-          const logoDataUri = await logoToDataUri(profile.logoUri);
-          const html = generateReportHtml(doc, schema, profile, logoDataUri);
+          const html = generateReportHtml(doc, schema, profile);
           navigation.navigate("ReportPreview", { html, filename: doc.filename });
         }}
         onCloseInspection={() => navigation.goBack()}
@@ -440,6 +448,7 @@ function InspectionContent({ schema, navigation }: ContentProps) {
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
+    </SectionNavigationProvider>
   );
 }
 

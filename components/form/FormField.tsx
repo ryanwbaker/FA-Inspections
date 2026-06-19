@@ -4,7 +4,7 @@ import type { TriStateVal } from '../fields/TriStateField'
 import {
   NoteField, StringField, NumberField, DateField, BooleanYNField,
   TriStateField, RadioField, MultiCheckboxField, DropdownField,
-  PassFailField, SignatureField,
+  PassFailField, SignatureField, ImageField,
 } from '../fields'
 import { useInspection } from '../../context/InspectionContext'
 import { FieldLabel } from '../primitives'
@@ -133,6 +133,15 @@ export default function FormField({ field, groupKey }: Props) {
     case 'signature':
       return (
         <SignatureField
+          label={field.label}
+          required={required}
+          value={raw || null}
+          onChange={v => set(v ?? '')}
+        />
+      )
+    case 'image':
+      return (
+        <ImageField
           label={field.label}
           required={required}
           value={raw || null}

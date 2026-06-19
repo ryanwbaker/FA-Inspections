@@ -43,6 +43,11 @@ export default function DateField({ label, required, value, onChange }: Props) {
     else setInternal(formatted);
   };
 
+  const clear = () => {
+    if (onChange) onChange('');
+    else setInternal('');
+  };
+
   // Android: picker renders inline on change event — no modal needed
   if (Platform.OS === "android") {
     return (
@@ -50,7 +55,13 @@ export default function DateField({ label, required, value, onChange }: Props) {
         <FieldLabel label={label} required={required} />
         <TouchableOpacity style={s.input} onPress={() => setShowPicker(true)}>
           <Text style={val ? s.inputText : s.placeholder}>{val || "YYYY-MM-DD"}</Text>
-          <Feather name="calendar" size={16} color={Colors.secondary} />
+          {val ? (
+            <TouchableOpacity onPress={clear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={16} color={Colors.secondary} />
+            </TouchableOpacity>
+          ) : (
+            <Feather name="calendar" size={16} color={Colors.secondary} />
+          )}
         </TouchableOpacity>
         {showPicker && (
           <DateTimePicker
@@ -84,7 +95,13 @@ export default function DateField({ label, required, value, onChange }: Props) {
       <FieldLabel label={label} required={required} />
       <TouchableOpacity style={s.input} onPress={handleOpen}>
         <Text style={val ? s.inputText : s.placeholder}>{val || "YYYY-MM-DD"}</Text>
-        <Feather name="calendar" size={16} color={Colors.secondary} />
+        {val ? (
+          <TouchableOpacity onPress={clear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Feather name="x" size={16} color={Colors.secondary} />
+          </TouchableOpacity>
+        ) : (
+          <Feather name="calendar" size={16} color={Colors.secondary} />
+        )}
       </TouchableOpacity>
 
       <Modal visible={showPicker} transparent animationType="slide">

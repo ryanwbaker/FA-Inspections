@@ -9,4 +9,5 @@ export { default as MultiCheckboxField } from "./MultiCheckboxField";
 export { default as DropdownField } from "./DropdownField";
 export { default as PassFailField } from "./PassFailField";
 export { default as SignatureField } from "./SignatureField";
+export { default as ImageField } from "./ImageField";
 export type { TriStateVal } from "./TriStateField";
