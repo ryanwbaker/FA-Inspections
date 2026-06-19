@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   Animated, Pressable, StyleSheet, Dimensions,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
@@ -26,6 +26,7 @@ interface Props {
   onSaveAs: () => void
   onShare: () => void
   onExportPdf: () => void
+  exportingPdf?: boolean
   onCloseInspection: () => void
 }
 
@@ -62,7 +63,7 @@ type DisplayItem = GroupHeaderItem | SectionContainerItem | PageItem
 export default function SectionSidebar({
   visible, pages, currentPageKey, schema,
   onNavigate, onAddGroup, onRemoveGroup, onClose,
-  autoSave, onToggleAutoSave, onSaveAs, onShare, onExportPdf, onCloseInspection,
+  autoSave, onToggleAutoSave, onSaveAs, onShare, onExportPdf, exportingPdf, onCloseInspection,
 }: Props) {
   const insets = useSafeAreaInsets()
   const translateX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current
@@ -338,11 +339,14 @@ export default function SectionSidebar({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={s.footerBtn}
+            style={[s.footerBtn, exportingPdf && s.footerBtnDisabled]}
             onPress={() => { onClose(); onExportPdf() }}
+            disabled={exportingPdf}
             activeOpacity={0.7}
           >
-            <Text style={s.footerBtnText}>Export PDF…</Text>
+            {exportingPdf
+              ? <ActivityIndicator size="small" color={Colors.secondary} />
+              : <Text style={s.footerBtnText}>Export PDF…</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -526,6 +530,7 @@ const s = StyleSheet.create({
     color: Colors.accent,
     fontWeight: FontWeight.semibold,
   },
+  footerBtnDisabled: { opacity: 0.45 },
   footerBtnClose: {
     marginTop: Spacing.xs,
     borderTopWidth: 1,

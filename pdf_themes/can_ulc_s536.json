@@ -1,0 +1,39 @@
+{
+  "id": "can_ulc_s536",
+  "name": "CAN/ULC-S536 Standard Report",
+  "system": true,
+  "page": {
+    "size": "letter",
+    "margins": { "top": 50, "right": 47, "bottom": 36, "left": 47 }
+  },
+  "colors": {
+    "accent":     "#D4380D",
+    "accentSoft": "#FFF1ED",
+    "pass":       "#389E0D",
+    "passSoft":   "#F6FFED",
+    "fail":       "#CF1322",
+    "failSoft":   "#FFF1F0",
+    "na":         "#8C8C8C",
+    "naSoft":     "#FAFAFA",
+    "border":     "#E0DED8",
+    "primary":    "#1A1A1A",
+    "secondary":  "#6B6B6B",
+    "surface":    "#FFFFFF",
+    "bg":         "#F5F5F0"
+  },
+  "cover": {
+    "show_logo":            true,
+    "show_title":           true,
+    "show_form_meta":       true,
+    "show_generated_date":  true,
+    "show_company_block":   true
+  },
+  "header": {
+    "left":  ["logo", "company_name"],
+    "right": ["form_id"]
+  },
+  "footer": {
+    "left":  ["form_id", "doc_filename"],
+    "right": ["page_of_total"]
+  }
+}

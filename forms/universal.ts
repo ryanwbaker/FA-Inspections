@@ -1,27 +1,41 @@
 import type { InspectionDocument } from '../types/inspection'
 import type { InspectionSchema, SectionDefinition, SubsectionDefinition } from '../form_schema/types'
 import type { CompanyProfile } from '../services/companyProfile'
+import type { PdfTheme, HeaderSlot, FooterSlot } from '../types/pdfTheme'
 import { buildPagesFromDocument } from '../services/formPages'
 import { h, renderSectionContent } from '../services/pdfReport'
 import { findFieldBySource } from '../services/schemaDefaults'
 
-const C = {
-  pass: '#389E0D', passSoft: '#F6FFED',
-  fail: '#CF1322', failSoft: '#FFF1F0',
-  na: '#8C8C8C',   naSoft: '#FAFAFA',
-  accent: '#D4380D', accentSoft: '#FFF1ED',
-  border: '#E0DED8', primary: '#1A1A1A', secondary: '#6B6B6B',
-  surface: '#FFFFFF', bg: '#F5F5F0',
+// ── Page dimension helpers ──────────────────────────────────────────────────
+// Letter: 612 × 792 pt.  A4: 595 × 842 pt.
+const PAGE_DIMS = {
+  letter: { w: 612, h: 792 },
+  a4:     { w: 595, h: 842 },
 }
 
-export function buildCss(): string {
+const HDR_PT = 44  // fixed header height (pt)
+const FTR_PT = 36  // fixed footer height (pt)
+
+function printDims(theme: PdfTheme) {
+  const size = theme.page.size ?? 'letter'
+  const { w, h: ph } = PAGE_DIMS[size] ?? PAGE_DIMS.letter
+  const m = theme.page.margins
+  const PRINT_W  = w  - m.left - m.right
+  const PRINT_H  = ph - m.top  - m.bottom
+  const AVAIL_PT = PRINT_H - HDR_PT - FTR_PT
+  return { PRINT_W, PRINT_H, AVAIL_PT }
+}
+
+// ── CSS ─────────────────────────────────────────────────────────────────────
+
+function buildCss(theme: PdfTheme): string {
+  const C = theme.colors
   const F = `-apple-system, system-ui, 'Helvetica Neue', Arial, sans-serif`
   return `
-    @page { size: letter; }
+    @page { size: ${theme.page.size ?? 'letter'}; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: ${F}; font-size: 10px; color: ${C.primary}; background: #fff; line-height: 1.45; }
 
-    /* ── Explicit page divs built by pagination script ── */
     .pdf-page { display: flex; flex-direction: column; page-break-after: always; overflow: hidden; }
     .pdf-page:last-child { page-break-after: auto; }
 
@@ -46,7 +60,6 @@ export function buildCss(): string {
       font-size: 7.5px; color: ${C.secondary};
     }
 
-    /* ── Cover (page 1 top) — logo ABOVE title ── */
     .cover-logo-block { margin-bottom: 10px; }
     .logo { max-height: 80px; max-width: 200px; object-fit: contain; object-position: left top; display: block; }
     .report-header { padding-bottom: 12px; margin-bottom: 14px; border-bottom: 2px solid ${C.accent}; }
@@ -60,9 +73,7 @@ export function buildCss(): string {
     .company-block div { font-size: 9.5px; color: ${C.secondary}; }
     .company-block strong { color: ${C.primary}; font-weight: 600; }
 
-    /* ── Section layout ── */
     .page-section { margin-bottom: 16px; }
-    /* landscape-section: no extra page-break rules — the pdf-page div structure handles paging */
     .landscape-section { }
     .section-heading {
       display: flex; align-items: center; gap: 7px;
@@ -73,11 +84,10 @@ export function buildCss(): string {
       background: ${C.accentSoft}; border: 1px solid ${C.accent};
       border-radius: 3px; padding: 1px 5px; white-space: nowrap; flex-shrink: 0;
     }
-    .section-title { font-size: 11px; font-weight: 600; color: ${C.primary}; }
+    .section-title     { font-size: 11px; font-weight: 600; color: ${C.primary}; }
     .section-continued { font-size: 9px; color: ${C.secondary}; font-style: italic; margin-left: 6px; }
     .na-card { background: ${C.naSoft}; border: 1px solid ${C.border}; border-radius: 4px; padding: 8px 12px; font-size: 9.5px; color: ${C.secondary}; font-style: italic; margin-bottom: 10px; }
 
-    /* ── Field table ── */
     .field-table { width: 100%; border-collapse: collapse; border: 1px solid ${C.border}; margin-bottom: 10px; }
     .field-table tr { page-break-inside: avoid; }
     .field-table tr:last-child td { border-bottom: none; }
@@ -86,7 +96,6 @@ export function buildCss(): string {
     .group-header { padding: 5px 8px; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: ${C.secondary}; background: ${C.bg}; border-bottom: 1px solid ${C.border}; }
     .field-notes { margin-top: 3px; }
 
-    /* ── Data tables ── */
     .data-table { width: 100%; border-collapse: collapse; border: 1px solid ${C.border}; margin-bottom: 10px; font-size: 9px; }
     .data-table thead { display: table-header-group; }
     .data-table tr { page-break-inside: avoid; }
@@ -94,7 +103,6 @@ export function buildCss(): string {
     .data-table td { border: 1px solid ${C.border}; padding: 4px 6px; vertical-align: top; word-break: break-word; }
     .data-table tr:nth-child(even) td { background: #fafaf8; }
 
-    /* ── Badges / misc ── */
     .badge { display: inline-block; font-size: 8.5px; font-weight: 700; border-radius: 3px; padding: 1px 6px; border: 1px solid; white-space: nowrap; }
     .badge.pass { background: ${C.passSoft}; color: ${C.pass}; border-color: ${C.pass}; }
     .badge.fail { background: ${C.failSoft}; color: ${C.fail}; border-color: ${C.fail}; }
@@ -105,41 +113,115 @@ export function buildCss(): string {
     .note-group-label { font-size: 8px; font-weight: 700; text-transform: uppercase; color: ${C.secondary}; margin-top: 6px; }
     .note-link { color: ${C.accent}; text-decoration: underline; font-style: normal; }
     .signature-img { max-width: 200px; max-height: 80px; border: 1px solid ${C.border}; border-radius: 3px; }
+    .field-image { max-width: 200px; max-height: 120px; border: 1px solid ${C.border}; border-radius: 3px; }
   `
 }
+
+// ── Slot renderers ───────────────────────────────────────────────────────────
+
+function renderHeaderSlot(
+  slot: HeaderSlot,
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  logoDataUri: string | null,
+  today: string,
+): string {
+  switch (slot) {
+    case 'logo':
+      return logoDataUri
+        ? `<img class="pdf-header-logo" src="${logoDataUri}" alt="" />`
+        : ''
+    case 'company_name':
+      return `<span class="pdf-header-co">${h(profile.name || schema.formId)}</span>`
+    case 'form_id':
+      return `<span class="pdf-header-right">${h(schema.formId)}</span>`
+    case 'schema_title':
+      return `<span>${h(schema.title)}</span>`
+    case 'doc_filename':
+      return `<span>${h(doc.filename)}</span>`
+    case 'today':
+      return `<span>${today}</span>`
+  }
+}
+
+function renderHeaderBand(
+  slots: HeaderSlot[],
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  logoDataUri: string | null,
+  today: string,
+): string {
+  return slots
+    .map(s => renderHeaderSlot(s, doc, schema, profile, logoDataUri, today))
+    .filter(Boolean)
+    .join('')
+}
+
+function renderFooterSlot(slot: FooterSlot, doc: InspectionDocument, schema: InspectionSchema, profile: CompanyProfile, today: string): string {
+  switch (slot) {
+    case 'form_id':      return h(schema.formId)
+    case 'doc_filename': return h(doc.filename)
+    case 'company_name': return h(profile.name)
+    case 'today':        return today
+    case 'page_of_total': return 'PAGE_NUM / TOTAL_PAGES'
+  }
+}
+
+function buildFooterTmpl(
+  slots: { left: FooterSlot[]; right: FooterSlot[] },
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  today: string,
+): string {
+  const left  = slots.left.map(s => renderFooterSlot(s, doc, schema, profile, today)).filter(Boolean).join(' · ')
+  const right = slots.right.map(s => renderFooterSlot(s, doc, schema, profile, today)).filter(Boolean).join(' · ')
+  return `<span>${left}</span><span>${right}</span>`
+}
+
+// ── Main generate function ───────────────────────────────────────────────────
 
 export function generate(
   doc: InspectionDocument,
   schema: InspectionSchema,
   profile: CompanyProfile,
+  theme: PdfTheme,
 ): string {
   const pages = buildPagesFromDocument(schema, doc.repeatableGroups, doc.applicableStates)
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 
-  // Resolve logo from fieldValues (company_logo image field), fall back to profile
+  // Resolve logo from fieldValues via the source field, fall back to profile
   const logoRef = findFieldBySource(schema, 'company_profile.logoUri')
   const logoDataUri = logoRef
     ? (doc.fieldValues[`${logoRef.groupKey}/${logoRef.fieldId}`] ?? profile.logoUri ?? null)
     : (profile.logoUri ?? null)
+  const showLogo = theme.cover.show_logo !== false
 
-  // Cover — logo ABOVE title
-  const logoHtml = logoDataUri ? `<img class="logo" src="${logoDataUri}" alt="Company Logo" />` : ''
+  // ── Cover ────────────────────────────────────────────────────────────────
+  const logoHtml = showLogo && logoDataUri
+    ? `<div class="cover-logo-block"><img class="logo" src="${logoDataUri}" alt="Company Logo" /></div>`
+    : ''
+
   const companyAddr = [profile.address1, profile.address2, profile.city, profile.province, profile.postalCode]
     .filter(Boolean).join(', ')
+
   const coverHtml = `
     <div class="report-header">
-      ${logoHtml ? `<div class="cover-logo-block">${logoHtml}</div>` : ''}
-      <div class="schema-title">${schema.title}</div>
-      <div class="form-meta">Form ${h(schema.formId)} · Version ${h(schema.version)}</div>
-      <div class="generated">Generated: ${today} · Inspection: ${h(doc.filename)}</div>
+      ${logoHtml}
+      ${theme.cover.show_title !== false ? `<div class="schema-title">${h(schema.title)}</div>` : ''}
+      ${theme.cover.show_form_meta !== false ? `<div class="form-meta">Form ${h(schema.formId)} · Version ${h(schema.version)}</div>` : ''}
+      ${theme.cover.show_generated_date !== false ? `<div class="generated">Generated: ${today} · Inspection: ${h(doc.filename)}</div>` : ''}
     </div>
+    ${theme.cover.show_company_block !== false ? `
     <div class="company-block">
       <div><strong>${h(profile.name || 'Service Company')}</strong></div>
       ${profile.phone ? `<div>Phone: ${h(profile.phone)}</div>` : ''}
       ${companyAddr ? `<div>Address: ${h(companyAddr)}</div>` : ''}
-    </div>`
+    </div>` : ''}`
 
-  // Sections
+  // ── Sections ─────────────────────────────────────────────────────────────
   const sectionsHtml = pages.map((page) => {
     const section = schema.sections.find((s) => s.id === page.sectionId)!
     const target: SectionDefinition | SubsectionDefinition = page.subsectionId
@@ -158,28 +240,25 @@ export function generate(
     return `<div class="${divClass}" data-clause="${h(page.clause ?? '')}" data-title="${h(page.title)}" data-landscape="${isLandscape}">${heading}${body}</div>`
   }).join('\n')
 
-  const headerHtml = `
-    <div class="pdf-header-left">
-      ${logoDataUri ? `<img class="pdf-header-logo" src="${logoDataUri}" alt="" />` : ''}
-      <span class="pdf-header-co">${h(profile.name || schema.formId)}</span>
-    </div>
-    <span class="pdf-header-right">${h(schema.formId)}</span>`
+  // ── Header / footer templates ────────────────────────────────────────────
+  const leftHtml  = renderHeaderBand(theme.header.left,  doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const rightHtml = renderHeaderBand(theme.header.right, doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const headerHtml = `<div class="pdf-header-left">${leftHtml}</div><div>${rightHtml}</div>`
+  const footerTmpl = buildFooterTmpl(theme.footer, doc, schema, profile, today)
 
-  const footerTmpl = `
-    <span>${h(schema.formId)} · ${h(doc.filename)}</span>
-    <span>PAGE_NUM / TOTAL_PAGES</span>
-    <span>${today}</span>`
+  // ── Page dimensions from theme ───────────────────────────────────────────
+  const { PRINT_W, PRINT_H, AVAIL_PT } = printDims(theme)
 
-  // ── Pagination script ─────────────────────────────────────────────────────
+  // ── Pagination script ────────────────────────────────────────────────────
   const script = `
 <script>
 (function () {
   window.addEventListener('load', function () {
-    var PRINT_W  = 518;
-    var PRINT_H  = 706;
-    var HDR_PT   = 44;
-    var FTR_PT   = 36;
-    var AVAIL_PT = PRINT_H - HDR_PT - FTR_PT;
+    var PRINT_W  = ${PRINT_W};
+    var PRINT_H  = ${PRINT_H};
+    var HDR_PT   = ${HDR_PT};
+    var FTR_PT   = ${FTR_PT};
+    var AVAIL_PT = ${AVAIL_PT};
 
     var bodyW = document.body.getBoundingClientRect().width || PRINT_W;
     var scale = PRINT_W / bodyW;
@@ -188,7 +267,6 @@ export function generate(
     var ftrHpx   = FTR_PT  / scale;
     var availHpx = AVAIL_PT / scale;
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
     var HEADER_HTML = ${JSON.stringify(headerHtml)};
     var FOOTER_TMPL = ${JSON.stringify(footerTmpl)};
 
@@ -216,29 +294,19 @@ export function generate(
       return { page: p, content: c };
     }
 
-    // ── Collect flat list of "row-items" ────────────────────────────────────
-    // Each item: { kind:'cover'|'section-open'|'rows'|'block', ... }
-    // We will bin these into pages respecting height.
-
-    function buf(px) { return px + 4; } // small measurement buffer
+    function buf(px) { return px + 4; }
 
     var items = [];
 
-    // Cover
     var coverEl = document.querySelector('.cover-content');
     if (coverEl) {
       items.push({ kind: 'cover', el: coverEl, height: buf(coverEl.getBoundingClientRect().height) });
     }
 
-    // Sections
     var sections = Array.prototype.slice.call(document.querySelectorAll('.page-section'));
     sections.forEach(function (sec) {
-      // FIX: Only classify as landscape if there are actual data rows — empty
-      // repeatable_list sections (§20.2(1), §20.4) should render as normal blocks.
       var isLandscape = sec.dataset.landscape === 'true';
       if (isLandscape) {
-        var hasRows = sec.querySelector('tbody tr') || sec.querySelector('.empty');
-        // If no rows AND no actual content (just "No entries"), render as normal block
         var dataRows = sec.querySelectorAll('tbody tr');
         if (dataRows.length === 0) isLandscape = false;
       }
@@ -249,13 +317,11 @@ export function generate(
       var headingH  = headingEl ? buf(headingEl.getBoundingClientRect().height) : 0;
 
       if (isLandscape) {
-        // Landscape sections get their own page bin (no CSS page-break tricks needed)
         items.push({ kind: 'landscape', el: sec, clauseTxt: clauseTxt, titleTxt: titleTxt,
                      height: buf(sec.getBoundingClientRect().height) });
         return;
       }
 
-      // Push section heading as its own item
       items.push({ kind: 'heading', clauseTxt: clauseTxt, titleTxt: titleTxt,
                    isContinued: false, height: headingH });
 
@@ -311,7 +377,6 @@ export function generate(
       }
     });
 
-    // ── Bin items into pages ─────────────────────────────────────────────────
     var pageBins = [];
     var currentBin = [];
     var currentH   = 0;
@@ -327,10 +392,8 @@ export function generate(
     function addItem(item) { currentBin.push(item); currentH += item.height; }
 
     items.forEach(function (item) {
-      // FIX: landscape sections get exactly one clean page — no double-flush empty bin
       if (item.kind === 'landscape') {
-        if (currentH > 0) flushPage();      // flush pending content
-        // Create landscape bin directly (no second flushPage call that created empty bins)
+        if (currentH > 0) flushPage();
         pageBins.push({ items: [item], isFirstPage: false, isLandscape: true });
         currentBin = []; currentH = 0;
         return;
@@ -345,7 +408,6 @@ export function generate(
           : '';
         flushPage();
         var newKey = (item.clauseTxt || '') + (item.titleTxt || '');
-        // FIX: Add "(continued)" heading only when not already a heading
         if (newKey && newKey === prevKey && item.kind !== 'heading') {
           addItem({ kind: 'heading', clauseTxt: item.clauseTxt, titleTxt: item.titleTxt,
                     isContinued: true, height: 32 / scale });
@@ -355,20 +417,6 @@ export function generate(
     });
 
     if (currentBin.length > 0) flushPage();
-
-    // FIX: Resolve orphan headings in two steps.
-    //
-    // Step 1 — move lone headings forward.
-    // If a bin's last item is a heading with no content following it, pop the
-    // heading and prepend it to the next bin.  Two sub-cases:
-    //   a) The next bin already starts with a heading for the SAME section
-    //      (placed there earlier by the flush-and-continue "(continued)" logic).
-    //      → Replace that duplicate heading with the fresh one (no "(continued)").
-    //   b) Otherwise, simply unshift the heading onto the next bin.
-    //
-    // Step 2 — drop bins that became empty after Step 1.
-    // Without Step 2, popping the only item from a bin leaves a blank page that
-    // still renders (with just header + footer and no content).
 
     for (var bi = 0; bi < pageBins.length - 1; bi++) {
       var bin = pageBins[bi];
@@ -380,23 +428,16 @@ export function generate(
         if (firstOfNext && firstOfNext.kind === 'heading' &&
             firstOfNext.clauseTxt === orphan.clauseTxt &&
             firstOfNext.titleTxt  === orphan.titleTxt) {
-          // Next bin already has a heading for this same section — replace it
-          // so we don't show two headings back-to-back on the same page.
           nextBin.items[0] = orphan;
         } else {
           nextBin.items.unshift(orphan);
         }
-        // bin may now be empty — Step 2 will drop it.
       }
     }
-
-    // Step 2: remove bins that are now empty (no items left after Step 1 moved
-    // their lone heading out).
     pageBins = pageBins.filter(function (b) { return b.items.length > 0; });
 
     var totalPages = pageBins.length;
 
-    // ── Build DOM from bins ──────────────────────────────────────────────────
     function renderHeading(item) {
       var d = document.createElement('div');
       d.className = 'section-heading';
@@ -419,33 +460,22 @@ export function generate(
       return d;
     }
 
-    // Track open tables across items (to group rows into a single <table>)
     function renderItems(items, contentEl) {
       var openTable = null;
       var openTableClass = '';
-      var openTableTag = '';
       var openThead = null;
 
       function closeTable() {
-        if (openTable) {
-          contentEl.appendChild(openTable);
-          openTable = null;
-          openTableClass = '';
-          openTableTag = '';
-          openThead = null;
-        }
+        if (openTable) { contentEl.appendChild(openTable); openTable = null; openTableClass = ''; openThead = null; }
       }
 
       items.forEach(function (item) {
         if (item.kind === 'cover') {
-          closeTable();
-          contentEl.appendChild(item.el.cloneNode(true));
+          closeTable(); contentEl.appendChild(item.el.cloneNode(true));
         } else if (item.kind === 'heading') {
-          closeTable();
-          contentEl.appendChild(renderHeading(item));
+          closeTable(); contentEl.appendChild(renderHeading(item));
         } else if (item.kind === 'block') {
-          closeTable();
-          contentEl.appendChild(item.el.cloneNode(true));
+          closeTable(); contentEl.appendChild(item.el.cloneNode(true));
         } else if (item.kind === 'table-thead') {
           closeTable();
           openTable = document.createElement(item.tableTag || 'table');
@@ -453,30 +483,21 @@ export function generate(
           openThead = item.el.cloneNode(true);
           openTable.appendChild(openThead);
           openTableClass = item.tableClass || '';
-          openTableTag = item.tableTag || 'table';
         } else if (item.kind === 'table-rows') {
-          // Open or continue a table
           if (!openTable || openTableClass !== item.tableClass) {
             closeTable();
             openTable = document.createElement(item.tableTag || 'table');
             openTable.className = item.tableClass || '';
             openTableClass = item.tableClass || '';
-            openTableTag = item.tableTag || 'table';
           }
-          // If this table had a thead and we're starting fresh, re-add it
-          // (thead repeating is handled by CSS display:table-header-group)
-          item.rows.forEach(function (row) {
-            openTable.appendChild(row.cloneNode(true));
-          });
+          item.rows.forEach(function (row) { openTable.appendChild(row.cloneNode(true)); });
         } else if (item.kind === 'landscape') {
-          closeTable();
-          contentEl.appendChild(item.el.cloneNode(true));
+          closeTable(); contentEl.appendChild(item.el.cloneNode(true));
         }
       });
       closeTable();
     }
 
-    // Replace body
     document.body.innerHTML = '';
     pageBins.forEach(function (bin, i) {
       var pn = i + 1;
@@ -494,7 +515,7 @@ export function generate(
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${h(doc.filename)} — Inspection Report</title>
-  <style>${buildCss()}</style>
+  <style>${buildCss(theme)}</style>
 </head>
 <body>
   <div class="cover-content">${coverHtml}</div>

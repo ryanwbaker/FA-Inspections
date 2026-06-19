@@ -248,15 +248,16 @@ export function renderSectionContent(
 // ─── Template dispatcher ──────────────────────────────────────────────────────
 // CSS and layout live in forms/<template-id>.ts; this is just the orchestrator.
 
-import { getTemplate } from '../forms'
+import { generate } from '../forms'
+import type { PdfTheme } from '../types/pdfTheme'
 
 export function generateReportHtml(
   doc: InspectionDocument,
   schema: InspectionSchema,
   profile: CompanyProfile,
+  theme: PdfTheme,
 ): string {
-  const generate = getTemplate(schema.template ?? schema.id)
-  return generate(doc, schema, profile)
+  return generate(doc, schema, profile, theme)
 }
 
 // ─── Logo helper ──────────────────────────────────────────────────────────────

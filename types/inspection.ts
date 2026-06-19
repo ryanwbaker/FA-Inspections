@@ -9,6 +9,7 @@ export interface InspectionDocument {
   id: string
   schemaId: string
   schemaVersion: string
+  themeId?: string           // PDF theme to use when generating reports
   status: 'draft' | 'signed'
   filename: string
   filePath: string | null     // absolute path on device; null until first auto-save

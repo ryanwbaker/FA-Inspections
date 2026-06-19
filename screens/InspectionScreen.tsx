@@ -13,8 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
-import { getSchema } from "../form_schema";
+import { getSchemaSync } from "../form_schema";
 import type { InspectionSchema } from "../form_schema/types";
+import { getTheme } from "../services/themeStore";
 import {
   SectionPage,
   PaginationStepper,
@@ -42,12 +43,14 @@ import {
 } from "../services/companyProfile";
 import { loadTechProfile } from "../services/techProfile";
 import { loadLocationDefaults } from "../services/locationDefaults";
+import { loadCustomDefaults, toProfilesBag } from "../services/customDefaults";
 import { resolveSourceDefaults } from "../services/schemaDefaults";
 import {
   type FormPage,
   buildPagesFromDocument,
 } from "../services/formPages";
-import { generateReportHtml } from "../services/pdfReport";
+import { generateReportHtml, exportInspectionPdf } from "../services/pdfReport";
+import * as Sharing from 'expo-sharing';
 
 export type { FormPage };
 
@@ -119,6 +122,7 @@ function InspectionContent({ schema, navigation }: ContentProps) {
 
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{
     groupKey: string;
     message: string;
@@ -390,10 +394,26 @@ function InspectionContent({ schema, navigation }: ContentProps) {
         }}
         onExportPdf={async () => {
           setSidebarOpen(false);
-          const profile = await loadProfile();
-          const html = generateReportHtml(doc, schema, profile);
-          navigation.navigate("ReportPreview", { html, filename: doc.filename });
+          setGeneratingPdf(true);
+          try {
+            const [profile, theme] = await Promise.all([
+              loadProfile(),
+              getTheme(doc.themeId),
+            ]);
+            const html = generateReportHtml(doc, schema, profile, theme);
+            const pdfPath = await exportInspectionPdf(html, doc.filename);
+            await Sharing.shareAsync(pdfPath, {
+              mimeType: 'application/pdf',
+              dialogTitle: doc.filename,
+              UTI: 'com.adobe.pdf',
+            });
+          } catch {
+            // share sheet dismissed or generation failed — not critical
+          } finally {
+            setGeneratingPdf(false);
+          }
         }}
+        exportingPdf={generatingPdf}
         onCloseInspection={() => navigation.goBack()}
       />
 
@@ -458,8 +478,8 @@ export default function InspectionScreen({
   route,
   navigation,
 }: InspectionScreenProps) {
-  const { schemaId, loadFilePath } = route.params;
-  const schema = getSchema(schemaId);
+  const { schemaId, themeId, loadFilePath } = route.params;
+  const schema = getSchemaSync(schemaId);
 
   const [initialDoc, setInitialDoc] = useState<InspectionDocument | null>(null);
 
@@ -483,12 +503,13 @@ export default function InspectionScreen({
     if (loadFilePath) {
       loadInspection(loadFilePath)
         .then(async (doc) => {
-          const [profile, tech, loc] = await Promise.all([
+          const [profile, tech, loc, custom] = await Promise.all([
             loadProfile(),
             loadTechProfile(),
             loadLocationDefaults(),
+            loadCustomDefaults(),
           ]);
-          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc, custom: toProfilesBag(custom) };
 
           // Apply tech/location defaults silently when the file's fields are blank
           const techValues = resolveSourceDefaults(schema, profiles, {
@@ -531,15 +552,17 @@ export default function InspectionScreen({
           }
         })
         .catch(async () => {
-          const [profile, tech, loc] = await Promise.all([
+          const [profile, tech, loc, custom] = await Promise.all([
             loadProfile(),
             loadTechProfile(),
             loadLocationDefaults(),
+            loadCustomDefaults(),
           ]);
-          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc, custom: toProfilesBag(custom) };
           const doc = createInitialDocument(schema);
           setInitialDoc({
             ...doc,
+            themeId: themeId ?? undefined,
             fieldValues: {
               ...doc.fieldValues,
               ...resolveSourceDefaults(schema, profiles),
@@ -547,19 +570,20 @@ export default function InspectionScreen({
           });
         });
     } else {
-      Promise.all([loadProfile(), loadTechProfile(), loadLocationDefaults()])
-        .then(([profile, tech, loc]) => {
-          const profiles = { company_profile: profile, tech_profile: tech, location: loc };
+      Promise.all([loadProfile(), loadTechProfile(), loadLocationDefaults(), loadCustomDefaults()])
+        .then(([profile, tech, loc, custom]) => {
+          const profiles = { company_profile: profile, tech_profile: tech, location: loc, custom: toProfilesBag(custom) };
           const doc = createInitialDocument(schema);
           setPendingNewDoc({
             ...doc,
+            themeId: themeId ?? undefined,
             fieldValues: {
               ...doc.fieldValues,
               ...resolveSourceDefaults(schema, profiles),
             },
           });
         })
-        .catch(() => setPendingNewDoc(createInitialDocument(schema)));
+        .catch(() => setPendingNewDoc({ ...createInitialDocument(schema), themeId: themeId ?? undefined }));
     }
   }, []);
 

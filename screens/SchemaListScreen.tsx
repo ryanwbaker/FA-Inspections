@@ -5,15 +5,15 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
-import { listSchemas, getSchema } from "../form_schema";
-import type { InspectionSchema } from "../form_schema";
+import { getSchemaSync } from "../form_schema";
+import { listVisibleTemplates } from "../services/templateStore";
+import type { InspectionTemplate } from "../types/inspectionTemplate";
 import type { SchemaListScreenProps } from "../navigation/types";
 import {
   listInspections,
@@ -37,7 +37,7 @@ function formatDate(iso: string): string {
 export default function SchemaListScreen({
   navigation,
 }: SchemaListScreenProps) {
-  const schemas = listSchemas();
+  const [templates, setTemplates] = useState<InspectionTemplate[]>([]);
 
   const [saved, setSaved] = useState<InspectionMeta[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(true);
@@ -50,7 +50,6 @@ export default function SchemaListScreen({
   const [searchQuery, setSearchQuery] = useState("");
   const [newExpanded, setNewExpanded] = useState(true);
   const [savedExpanded, setSavedExpanded] = useState(true);
-  const [infoSchema, setInfoSchema] = useState<InspectionSchema | null>(null);
 
   const searchKeywords = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
   const filteredSaved = searchKeywords.length === 0
@@ -60,9 +59,10 @@ export default function SchemaListScreen({
         return searchKeywords.every((kw) => name.includes(kw));
       });
 
-  // Refresh the saved list whenever this screen is focused
+  // Refresh templates and saved list whenever this screen is focused
   useFocusEffect(
     useCallback(() => {
+      listVisibleTemplates().then(setTemplates).catch(() => {});
       setLoadingSaved(true);
       listInspections()
         .then(setSaved)
@@ -173,41 +173,42 @@ export default function SchemaListScreen({
 
             {newExpanded && (
               <>
-                {schemas.map((schema) => (
-                  <TouchableOpacity
-                    key={schema.id}
-                    style={s.schemaCard}
-                    onPress={() =>
-                      navigation.navigate("Inspection", { schemaId: schema.id })
-                    }
-                    activeOpacity={0.8}
-                  >
-                    <View style={s.schemaCardTop}>
-                      <View style={s.versionBadge}>
-                        <Text style={s.versionText}>{schema.formId}</Text>
+                {templates.map((tmpl) => {
+                  const schema = getSchemaSync(tmpl.schemaId);
+                  return (
+                    <TouchableOpacity
+                      key={tmpl.id}
+                      style={s.schemaCard}
+                      onPress={() =>
+                        navigation.navigate("Inspection", {
+                          schemaId: tmpl.schemaId,
+                          themeId: tmpl.themeId,
+                        })
+                      }
+                      activeOpacity={0.8}
+                    >
+                      <View style={s.schemaCardTop}>
+                        <View style={s.versionBadge}>
+                          <Text style={s.versionText}>{schema?.formId ?? tmpl.schemaId}</Text>
+                        </View>
+                        {schema && (
+                          <Text style={s.sectionCount}>
+                            {schema.sections.length} sections
+                          </Text>
+                        )}
                       </View>
-                      <Text style={s.sectionCount}>
-                        {schema.sections.length} sections
-                      </Text>
-                    </View>
-                    <Text style={s.schemaTitle}>{schema.title}</Text>
-                    <View style={s.schemaDescRow}>
-                      <Text style={s.schemaDesc} numberOfLines={2}>
-                        {schema.description}
-                      </Text>
-                      <TouchableOpacity
-                        style={s.schemaInfoBtn}
-                        onPress={() => setInfoSchema(schema)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Text style={s.schemaInfoBtnText}>ⓘ</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={s.startRow}>
-                      <Text style={s.startText}>Start Inspection →</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                      <Text style={s.schemaTitle}>{tmpl.name}</Text>
+                      {schema?.description ? (
+                        <Text style={s.schemaDesc} numberOfLines={2}>
+                          {schema.description}
+                        </Text>
+                      ) : null}
+                      <View style={s.startRow}>
+                        <Text style={s.startText}>Start Inspection →</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
 
                 <View style={s.divider} />
 
@@ -303,7 +304,7 @@ export default function SchemaListScreen({
               <View style={s.savedList}>
                 {filteredSaved.map((item) => {
                   const isSelected = selected.has(item.filePath);
-                  const itemSchema = getSchema(item.schemaId);
+                  const itemSchema = getSchemaSync(item.schemaId);
                   return (
                     <TouchableOpacity
                       key={item.filePath}
@@ -436,33 +437,6 @@ export default function SchemaListScreen({
         onCancel={() => setConfirmBulkDelete(false)}
       />
 
-      <Modal
-        visible={!!infoSchema}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-      >
-        <View style={s.infoOverlay}>
-          <View style={s.infoCard}>
-            <View style={s.infoCardHeader}>
-              <Text style={s.infoCardTitle}>{infoSchema?.title}</Text>
-              <Text style={s.infoCardSubtitle}>{infoSchema?.formId}</Text>
-            </View>
-            <ScrollView
-              style={s.infoScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={s.infoCardText}>{infoSchema?.description}</Text>
-            </ScrollView>
-            <TouchableOpacity
-              style={s.infoCloseBtn}
-              onPress={() => setInfoSchema(null)}
-            >
-              <Text style={s.infoCloseBtnText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
