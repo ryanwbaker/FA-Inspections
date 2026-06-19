@@ -2,6 +2,7 @@ import type { InspectionDocument } from '../types/inspection'
 import type { InspectionSchema, SectionDefinition, SubsectionDefinition } from '../form_schema/types'
 import type { CompanyProfile } from '../services/companyProfile'
 import type { PdfTheme, HeaderSlot, FooterSlot } from '../types/pdfTheme'
+import type { PaginationLayout } from '../types/pdfLayout'
 import { buildPagesFromDocument } from '../services/formPages'
 import { h, renderSectionContent } from '../services/pdfReport'
 import { findFieldBySource } from '../services/schemaDefaults'
@@ -11,6 +12,17 @@ import { findFieldBySource } from '../services/schemaDefaults'
 const PAGE_DIMS = {
   letter: { w: 612, h: 792 },
   a4:     { w: 595, h: 842 },
+}
+
+function landscapeDims(theme: PdfTheme) {
+  const size = theme.page.size ?? 'letter'
+  const { w: pw, h: ph } = PAGE_DIMS[size] ?? PAGE_DIMS.letter
+  // Physical page rotated: landscape width = portrait height, vice-versa
+  const m = theme.landscape_page?.margins ?? theme.page.margins
+  const LANDSCAPE_W  = ph - m.left - m.right
+  const LANDSCAPE_H  = pw - m.top  - m.bottom
+  const LANDSCAPE_AVAIL = LANDSCAPE_H - HDR_PT - FTR_PT
+  return { LANDSCAPE_W, LANDSCAPE_H, LANDSCAPE_AVAIL, margins: m }
 }
 
 const HDR_PT = 44  // fixed header height (pt)
@@ -520,6 +532,226 @@ export function generate(
 <body>
   <div class="cover-content">${coverHtml}</div>
   ${sectionsHtml}
+  ${script}
+</body>
+</html>`
+}
+
+// ── Measurement HTML ─────────────────────────────────────────────────────────
+// Same as generate() but the pagination script also postMessages the bin layout
+// to window.ReactNativeWebView before rebuilding the DOM. In printToFileAsync's
+// internal WebView ReactNativeWebView is undefined, so this is a no-op there.
+
+export function generateMeasurementHtml(
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  theme: PdfTheme,
+): string {
+  const measureCode = `
+    if (window.ReactNativeWebView) {
+      var _pages = pageBins.map(function(bin) {
+        var d = document.createElement('div');
+        if (!bin.isLandscape) renderItems(bin.items, d);
+        return { isLandscape: !!bin.isLandscape, isFirstPage: bin.isFirstPage, contentHtml: bin.isLandscape ? '' : d.innerHTML };
+      });
+      var _li = pageBins.reduce(function(a,b,i){ if(b.isLandscape) a.push(i); return a; },[]);
+      window.ReactNativeWebView.postMessage(JSON.stringify({ totalPages: pageBins.length, landscapePageIndices: _li, pages: _pages }));
+    }
+    `
+  // Inject measurement code just before the DOM rebuild
+  return generate(doc, schema, profile, theme)
+    .replace('    document.body.innerHTML = \'\';', measureCode + '    document.body.innerHTML = \'\';')
+}
+
+// ── Portrait static HTML ─────────────────────────────────────────────────────
+// Pre-built page divs from measurement layout — no JS pagination script.
+// Landscape slots are blank placeholder pages at the correct positions.
+
+export function generatePortraitHtml(
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  theme: PdfTheme,
+  layout: PaginationLayout,
+): string {
+  const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const logoRef = findFieldBySource(schema, 'company_profile.logoUri')
+  const logoDataUri = logoRef
+    ? (doc.fieldValues[`${logoRef.groupKey}/${logoRef.fieldId}`] ?? profile.logoUri ?? null)
+    : (profile.logoUri ?? null)
+  const showLogo = theme.cover.show_logo !== false
+
+  const leftHtml  = renderHeaderBand(theme.header.left,  doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const rightHtml = renderHeaderBand(theme.header.right, doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const headerHtml = `<div class="pdf-header-left">${leftHtml}</div><div>${rightHtml}</div>`
+  const footerTmpl = buildFooterTmpl(theme.footer, doc, schema, profile, today)
+  const { PRINT_W, PRINT_H } = printDims(theme)
+
+  const pagesHtml = layout.pages.map((page, i) => {
+    const pn = i + 1
+    const hdr = page.isFirstPage ? '' : `<div class="pdf-header">${headerHtml}</div>`
+    const ftr = `<div class="pdf-footer">${footerTmpl.replace('PAGE_NUM', String(pn)).replace('TOTAL_PAGES', String(layout.totalPages))}</div>`
+    return `<div class="pdf-page">${hdr}<div class="pdf-content">${page.contentHtml}</div>${ftr}</div>`
+  }).join('\n')
+
+  // Small script that runs in the print WebView to set correct pixel heights on
+  // the pre-built page divs. Content heights were measured in a different WebView
+  // context, so we recalculate the scale here and apply it — same formula as the
+  // main pagination script — so the flex layout pushes footers to the page bottom.
+  const heightScript = `
+<script>
+(function() {
+  window.addEventListener('load', function() {
+    var PRINT_W = ${PRINT_W};
+    var PRINT_H = ${PRINT_H};
+    var bodyW = document.body.getBoundingClientRect().width || PRINT_W;
+    var scale = PRINT_W / bodyW;
+    var pageHpx = PRINT_H / scale;
+    var pages = document.querySelectorAll('.pdf-page');
+    for (var i = 0; i < pages.length; i++) {
+      pages[i].style.height = pageHpx + 'px';
+    }
+  });
+}());
+</script>`
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${h(doc.filename)} — Portrait</title>
+  <style>${buildCss(theme)}</style>
+</head>
+<body>
+${pagesHtml}
+${heightScript}
+</body>
+</html>`
+}
+
+// ── Landscape HTML ───────────────────────────────────────────────────────────
+// Only landscape sections, with global page numbers from layout.
+
+export function generateLandscapeHtml(
+  doc: InspectionDocument,
+  schema: InspectionSchema,
+  profile: CompanyProfile,
+  theme: PdfTheme,
+  layout: PaginationLayout,
+): string {
+  const pages = buildPagesFromDocument(schema, doc.repeatableGroups, doc.applicableStates)
+  const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const logoRef = findFieldBySource(schema, 'company_profile.logoUri')
+  const logoDataUri = logoRef
+    ? (doc.fieldValues[`${logoRef.groupKey}/${logoRef.fieldId}`] ?? profile.logoUri ?? null)
+    : (profile.logoUri ?? null)
+  const showLogo = theme.cover.show_logo !== false
+
+  // Only render landscape sections
+  const landscapeSectionsHtml = pages
+    .filter((page) => {
+      const section = schema.sections.find((s) => s.id === page.sectionId)!
+      const target: SectionDefinition | SubsectionDefinition = page.subsectionId
+        ? section.subsections!.find((s) => s.id === page.subsectionId)!
+        : section
+      const isLandscape =
+        target.type === 'device_legend' ||
+        target.type === 'device_record_list' ||
+        (target.type === 'repeatable_list' && (target.item_fields?.length ?? 0) > 5)
+      if (!isLandscape) return false
+      // Skip if no data
+      const ctxKey = `${page.groupKey}/${target.id}`
+      if (target.type === 'repeatable_list' || target.type === 'device_record_list') {
+        return (doc.listItems[ctxKey]?.length ?? 0) > 0
+      }
+      if (target.type === 'device_legend') return doc.legend.length > 0
+      return true
+    })
+    .map((page) => {
+      const section = schema.sections.find((s) => s.id === page.sectionId)!
+      const target: SectionDefinition | SubsectionDefinition = page.subsectionId
+        ? section.subsections!.find((s) => s.id === page.subsectionId)!
+        : section
+      const clauseHtml = page.clause ? `<span class="clause-badge">§${page.clause}</span>` : ''
+      const heading = `<div class="section-heading">${clauseHtml}<span class="section-title">${page.title}</span></div>`
+      const body = renderSectionContent(page, target, section, doc, schema, pages)
+      return `<div class="page-section landscape-section" data-clause="${h(page.clause ?? '')}" data-title="${h(page.title)}">${heading}${body}</div>`
+    }).join('\n')
+
+  const leftHtml  = renderHeaderBand(theme.header.left,  doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const rightHtml = renderHeaderBand(theme.header.right, doc, schema, profile, showLogo ? logoDataUri : null, today)
+  const headerHtml = `<div class="pdf-header-left">${leftHtml}</div><div>${rightHtml}</div>`
+  const footerTmpl = buildFooterTmpl(theme.footer, doc, schema, profile, today)
+
+  const { LANDSCAPE_W, LANDSCAPE_H, LANDSCAPE_AVAIL } = landscapeDims(theme)
+
+  const script = `
+<script>
+(function () {
+  window.addEventListener('load', function () {
+    var LANDSCAPE_W  = ${LANDSCAPE_W};
+    var LANDSCAPE_H  = ${LANDSCAPE_H};
+    var HDR_PT       = ${HDR_PT};
+    var FTR_PT       = ${FTR_PT};
+    var AVAIL_PT     = ${LANDSCAPE_AVAIL};
+    var GLOBAL_INDICES = ${JSON.stringify(layout.landscapePageIndices)};
+    var TOTAL_PAGES  = ${layout.totalPages};
+
+    var bodyW  = document.body.getBoundingClientRect().width || LANDSCAPE_W;
+    var scale  = LANDSCAPE_W / bodyW;
+    var pageHpx = LANDSCAPE_H  / scale;
+    var hdrHpx  = HDR_PT / scale;
+    var ftrHpx  = FTR_PT / scale;
+
+    var HEADER_HTML = ${JSON.stringify(headerHtml)};
+    var FOOTER_TMPL = ${JSON.stringify(footerTmpl)};
+
+    function makeHeader() {
+      var d = document.createElement('div'); d.className = 'pdf-header'; d.innerHTML = HEADER_HTML; return d;
+    }
+    function makeFooter(n, total) {
+      var d = document.createElement('div'); d.className = 'pdf-footer';
+      d.innerHTML = FOOTER_TMPL.replace('PAGE_NUM', n).replace('TOTAL_PAGES', total); return d;
+    }
+
+    var sections = Array.prototype.slice.call(document.querySelectorAll('.page-section'));
+    document.body.innerHTML = '';
+    sections.forEach(function (sec, i) {
+      var pn = GLOBAL_INDICES[i] + 1;
+      var p  = document.createElement('div');
+      p.className = 'pdf-page';
+      p.style.height = pageHpx + 'px';
+      p.appendChild(makeHeader());
+      var c = document.createElement('div'); c.className = 'pdf-content';
+      c.appendChild(sec.cloneNode(true));
+      p.appendChild(c);
+      p.appendChild(makeFooter(pn, TOTAL_PAGES));
+      document.body.appendChild(p);
+    });
+  });
+}());
+</script>`
+
+  // Landscape-specific CSS additions
+  const landscapeCss = buildCss(theme) + `
+    .data-table { font-size: 8px; }
+    .data-table th, .data-table td { padding: 3px 5px; }
+    .field-table .field-label { width: 30%; font-size: 8px; }
+    .field-table .field-value { font-size: 9px; }
+  `
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${h(doc.filename)} — Landscape</title>
+  <style>${landscapeCss}</style>
+</head>
+<body>
+  ${landscapeSectionsHtml}
   ${script}
 </body>
 </html>`

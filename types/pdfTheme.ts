@@ -28,6 +28,11 @@ export interface PdfTheme {
     margins: { top: number; right: number; bottom: number; left: number }
   }
 
+  // Margins for landscape pages (defaults to page.margins if omitted)
+  landscape_page?: {
+    margins: { top: number; right: number; bottom: number; left: number }
+  }
+
   colors: PdfThemeColors
 
   cover: {

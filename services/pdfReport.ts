@@ -248,8 +248,12 @@ export function renderSectionContent(
 // ─── Template dispatcher ──────────────────────────────────────────────────────
 // CSS and layout live in forms/<template-id>.ts; this is just the orchestrator.
 
-import { generate } from '../forms'
+import { generate, generateMeasurementHtml, generatePortraitHtml, generateLandscapeHtml } from '../forms'
 import type { PdfTheme } from '../types/pdfTheme'
+import type { PaginationLayout } from '../types/pdfLayout'
+
+export { generateMeasurementHtml, generatePortraitHtml, generateLandscapeHtml }
+export type { PaginationLayout }
 
 export function generateReportHtml(
   doc: InspectionDocument,
@@ -281,22 +285,30 @@ export async function logoToDataUri(logoUri: string | null): Promise<string | nu
 
 // ─── PDF export (uses expo-print — installed separately) ─────────────────────
 
-export async function exportInspectionPdf(html: string, filename: string): Promise<string> {
+export async function exportInspectionPdf(
+  html: string,
+  filename: string,
+  orientation: 'portrait' | 'landscape' = 'portrait',
+  margins?: { top: number; right: number; bottom: number; left: number },
+): Promise<string> {
   // Dynamic require so TS doesn't error before expo-print is installed
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Print = require('expo-print') as {
     printToFileAsync: (opts: {
       html: string
       base64?: boolean
+      orientation?: 'portrait' | 'landscape'
       margins?: { top: number; right: number; bottom: number; left: number }
     }) => Promise<{ uri: string }>
   }
-  // Top margin = 50pt (~0.7in) so the native content area starts below the 32pt running header.
-  // Right/left = 47pt (0.65in). Bottom = 36pt (0.5in) for the footer.
+  const defaultMargins = orientation === 'landscape'
+    ? { top: 47, right: 50, bottom: 36, left: 50 }
+    : { top: 50, right: 47, bottom: 36, left: 47 }
   const { uri } = await Print.printToFileAsync({
     html,
     base64: false,
-    margins: { top: 50, right: 47, bottom: 36, left: 47 },
+    orientation,
+    margins: margins ?? defaultMargins,
   })
   const safeName = (filename || 'Inspection Report').replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'report'
   const dest = FileSystem.cacheDirectory + safeName + '.pdf'

@@ -6,6 +6,9 @@
     "size": "letter",
     "margins": { "top": 50, "right": 47, "bottom": 36, "left": 47 }
   },
+  "landscape_page": {
+    "margins": { "top": 47, "right": 50, "bottom": 36, "left": 50 }
+  },
   "colors": {
     "accent":     "#D4380D",
     "accentSoft": "#FFF1ED",

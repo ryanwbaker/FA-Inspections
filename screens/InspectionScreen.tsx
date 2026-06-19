@@ -10,6 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { WebView } = require('react-native-webview') as {
+  WebView: React.ComponentType<{
+    source: { html: string }
+    style?: object
+    onMessage?: (e: { nativeEvent: { data: string } }) => void
+    javaScriptEnabled?: boolean
+    scrollEnabled?: boolean
+  }>
+}
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Colors, FontSize, FontWeight, Spacing, Radii } from "../tokens";
@@ -49,8 +59,17 @@ import {
   type FormPage,
   buildPagesFromDocument,
 } from "../services/formPages";
-import { generateReportHtml, exportInspectionPdf } from "../services/pdfReport";
+import {
+  generateReportHtml,
+  generateMeasurementHtml,
+  generatePortraitHtml,
+  generateLandscapeHtml,
+  exportInspectionPdf,
+  type PaginationLayout,
+} from "../services/pdfReport";
+import { mergePdfsInterleaved } from "../services/pdfMerge";
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export type { FormPage };
 
@@ -123,6 +142,14 @@ function InspectionContent({ schema, navigation }: ContentProps) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [measureHtml, setMeasureHtml] = useState<string | null>(null);
+  const measureResolveRef = useRef<((layout: PaginationLayout) => void) | null>(null);
+
+  const measurePagination = (html: string): Promise<PaginationLayout> =>
+    new Promise((resolve) => {
+      measureResolveRef.current = resolve;
+      setMeasureHtml(html);
+    });
   const [confirmRemove, setConfirmRemove] = useState<{
     groupKey: string;
     message: string;
@@ -400,15 +427,40 @@ function InspectionContent({ schema, navigation }: ContentProps) {
               loadProfile(),
               getTheme(doc.themeId),
             ]);
-            const html = generateReportHtml(doc, schema, profile, theme);
-            const pdfPath = await exportInspectionPdf(html, doc.filename);
-            await Sharing.shareAsync(pdfPath, {
+
+            // Step 1 — measure pagination layout via hidden WebView
+            const mHtml = generateMeasurementHtml(doc, schema, profile, theme);
+            const layout = await measurePagination(mHtml);
+
+            const safeName = (doc.filename || 'report').replace(/[^a-z0-9_\- ]/gi, '_').trim() || 'report';
+
+            let finalPath: string;
+            if (layout.landscapePageIndices.length === 0) {
+              // No landscape sections — single portrait pass
+              const html = generateReportHtml(doc, schema, profile, theme);
+              finalPath = await exportInspectionPdf(html, doc.filename);
+            } else {
+              // Two-pass: portrait (with blank placeholders) + landscape, then merge
+              const [portraitHtml, landscapeHtml] = [
+                generatePortraitHtml(doc, schema, profile, theme, layout),
+                generateLandscapeHtml(doc, schema, profile, theme, layout),
+              ];
+              const lm = theme.landscape_page?.margins ?? { top: 47, right: 50, bottom: 36, left: 50 };
+              const [portraitPath, landscapePath] = await Promise.all([
+                exportInspectionPdf(portraitHtml, safeName + '_p', 'portrait', theme.page.margins),
+                exportInspectionPdf(landscapeHtml, safeName + '_l', 'landscape', lm),
+              ]);
+              finalPath = FileSystem.cacheDirectory + safeName + '.pdf';
+              await mergePdfsInterleaved(portraitPath, landscapePath, layout.landscapePageIndices, finalPath);
+            }
+
+            await Sharing.shareAsync(finalPath, {
               mimeType: 'application/pdf',
               dialogTitle: doc.filename,
               UTI: 'com.adobe.pdf',
             });
-          } catch {
-            // share sheet dismissed or generation failed — not critical
+          } catch (e) {
+            console.error('PDF export failed:', e);
           } finally {
             setGeneratingPdf(false);
           }
@@ -416,6 +468,35 @@ function InspectionContent({ schema, navigation }: ContentProps) {
         exportingPdf={generatingPdf}
         onCloseInspection={() => navigation.goBack()}
       />
+
+      {/* Hidden WebView for pagination measurement — off-screen, zero opacity */}
+      {measureHtml && (
+        <WebView
+          source={{ html: measureHtml }}
+          style={{
+            position: 'absolute',
+            top: -2000,
+            left: 0,
+            // expo-print's WKWebView renders letter paper at ~816 CSS px wide
+            // (8.5in × 96 DPI). Using the phone screen width (~390 px) causes
+            // text to wrap more aggressively, producing more pages than the
+            // print pass, which shifts content to the wrong page bins.
+            width: 816,
+            height: 1200,
+            opacity: 0,
+          }}
+          javaScriptEnabled
+          scrollEnabled={false}
+          onMessage={(e) => {
+            try {
+              const layout = JSON.parse(e.nativeEvent.data) as PaginationLayout;
+              measureResolveRef.current?.(layout);
+            } catch { /* malformed message — ignore */ }
+            measureResolveRef.current = null;
+            setMeasureHtml(null);
+          }}
+        />
+      )}
 
       <ConfirmModal
         visible={!!confirmRemove}
