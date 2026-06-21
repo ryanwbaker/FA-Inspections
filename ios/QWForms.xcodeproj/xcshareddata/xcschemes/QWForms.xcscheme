@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "FAInspections.app"
-               BlueprintName = "FAInspections"
-               ReferencedContainer = "container:FAInspections.xcodeproj">
+               BuildableName = "QWForms.app"
+               BlueprintName = "QWForms"
+               ReferencedContainer = "container:QWForms.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "FAInspectionsTests.xctest"
-               BlueprintName = "FAInspectionsTests"
-               ReferencedContainer = "container:FAInspections.xcodeproj">
+               BuildableName = "QWFormsTests.xctest"
+               BlueprintName = "QWFormsTests"
+               ReferencedContainer = "container:QWForms.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "FAInspections.app"
-            BlueprintName = "FAInspections"
-            ReferencedContainer = "container:FAInspections.xcodeproj">
+            BuildableName = "QWForms.app"
+            BlueprintName = "QWForms"
+            ReferencedContainer = "container:QWForms.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "FAInspections.app"
-            BlueprintName = "FAInspections"
-            ReferencedContainer = "container:FAInspections.xcodeproj">
+            BuildableName = "QWForms.app"
+            BlueprintName = "QWForms"
+            ReferencedContainer = "container:QWForms.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
